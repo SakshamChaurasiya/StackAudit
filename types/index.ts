@@ -1,4 +1,6 @@
-/** Shared domain types — expanded in Phase 2+ */
+/** Shared domain types */
+
+export type { AuditFormValues, ToolRowValues } from "@/types/audit-form";
 
 export type SupportedTool =
   | "cursor"

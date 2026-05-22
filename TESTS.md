@@ -13,6 +13,16 @@ npm test              # single run
 npm run test:watch    # watch mode
 ```
 
+## Current coverage
+
+- `tests/audit-form/schema.test.ts` — submit + draft schemas, duplicates, seats
+- `tests/audit-form/storage.test.ts` — localStorage round-trip
+- `tests/components/container.test.tsx` — Container/Section layout
+- `tests/components/typography.test.tsx` — Display, Eyebrow, Lead
+- `tests/landing/content.test.ts` — landing copy structure
+- `tests/audit-form/schema.test.ts` — Zod rules (seats, spend, min tools)
+- `tests/audit-form/storage.test.ts` — localStorage draft round-trip
+
 ## Priority matrix
 
 | Area              | Type        | Priority |

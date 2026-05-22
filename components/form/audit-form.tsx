@@ -1,0 +1,220 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+
+import { ToolRow } from "@/components/form/tool-row";
+import { FormField } from "@/components/shared/form-field";
+import { FormNumberInput } from "@/components/form/form-number-input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MAX_TOOL_ROWS } from "@/lib/audit-form/constants";
+import {
+  auditFormSchema,
+  createEmptyToolRow,
+  defaultAuditFormValues,
+} from "@/lib/audit-form/schema";
+import { findUnusedTool } from "@/lib/pricing/catalog";
+import {
+  clearAuditDraft,
+  loadAuditDraft,
+  saveAuditDraft,
+} from "@/lib/audit-form/storage";
+import { toast } from "@/lib/toast";
+import type { AuditFormValues } from "@/types/audit-form";
+
+const PERSIST_DEBOUNCE_MS = 400;
+
+export function AuditForm() {
+  const [hydrated, setHydrated] = useState(false);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const form = useForm<AuditFormValues>({
+    resolver: zodResolver(auditFormSchema),
+    defaultValues: defaultAuditFormValues,
+    mode: "onTouched",
+  });
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "tools",
+  });
+
+  const watchedTools = watch("tools");
+
+  useEffect(() => {
+    const draft = loadAuditDraft();
+    if (draft) reset(draft);
+    setHydrated(true);
+  }, [reset]);
+
+  const persistDraft = useCallback((values: AuditFormValues) => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      saveAuditDraft(values);
+    }, PERSIST_DEBOUNCE_MS);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const subscription = watch((data) => {
+      persistDraft(data as AuditFormValues);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, hydrated, persistDraft]);
+
+  const addToolRow = () => {
+    if (fields.length >= MAX_TOOL_ROWS) {
+      toast.error(`Maximum ${MAX_TOOL_ROWS} tools per audit`);
+      return;
+    }
+    const usedTools = watch("tools").map((t) => t.tool);
+    const nextTool = findUnusedTool(usedTools);
+    if (!nextTool) {
+      toast.error("All supported tools are already in your stack");
+      return;
+    }
+    append(createEmptyToolRow(nextTool));
+  };
+
+  const onSubmit = handleSubmit((data) => {
+    saveAuditDraft(data);
+    toast.success("Stack saved", {
+      description:
+        "Audit engine runs in Phase 4. Your inputs are saved locally.",
+    });
+  });
+
+  const onClearDraft = () => {
+    clearAuditDraft();
+    reset(defaultAuditFormValues);
+    toast.info("Draft cleared");
+  };
+
+  if (!hydrated) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-label="Loading form">
+        <div className="h-32 animate-pulse rounded-lg bg-muted" />
+        <div className="h-48 animate-pulse rounded-lg bg-muted" />
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-8" noValidate>
+      <Card className="border-border/80">
+        <CardHeader>
+          <CardTitle>Company</CardTitle>
+          <CardDescription>
+            Team context helps the audit engine right-size plan recommendations
+            (Phase 4).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="max-w-xs">
+          <Controller
+            name="teamSize"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                id="team-size"
+                label="Team size"
+                required
+                hint="Total people at your company"
+                error={errors.teamSize?.message}
+              >
+                <FormNumberInput
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                  min={1}
+                  step={1}
+                  placeholder="e.g. 12"
+                />
+              </FormField>
+            )}
+          />
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Your AI stack</h2>
+            <p className="text-sm text-muted-foreground">
+              Add every paid tool — overlap is where savings hide.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addToolRow}
+            disabled={fields.length >= MAX_TOOL_ROWS}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Add tool
+          </Button>
+        </div>
+
+        {errors.tools?.message && (
+          <p className="text-sm text-destructive" role="alert">
+            {errors.tools.message}
+          </p>
+        )}
+
+        <ul className="space-y-4">
+          {fields.map((field, index) => (
+            <li key={field.id}>
+              <ToolRow
+                index={index}
+                control={control}
+                errors={errors}
+                setValue={setValue}
+                onRemove={() => remove(index)}
+                canRemove={fields.length > 1}
+                usedTools={watchedTools.map((t) => t.tool)}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-caption text-muted-foreground">
+          Progress auto-saves to this browser.{" "}
+          <button
+            type="button"
+            onClick={onClearDraft}
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Clear draft
+          </button>
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button asChild variant="outline" type="button">
+            <Link href="/">Back</Link>
+          </Button>
+          <Button type="submit" variant="brand" disabled={isSubmitting}>
+            {isSubmitting ? "Saving…" : "Save & continue"}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}

@@ -24,7 +24,7 @@ User → Landing → Audit Form → Audit Engine → Results Page
 | Route              | Purpose                                      |
 | ------------------ | -------------------------------------------- |
 | `/(marketing)`     | Landing, hero, CTA to `/audit`               |
-| `/audit`           | Multi-step spend input (RHF + Zod)           |
+| `/audit`           | Dynamic spend input form (RHF + Zod)         |
 | `/results/[id]`    | Results, lead capture, shareable report      |
 
 ## Library modules
@@ -35,7 +35,17 @@ Pure functions: input stack → recommendations + monthly/annual savings. Rules 
 
 ### `lib/pricing/`
 
-Hardcoded plan tiers and prices per supported tool. Single source for engine + form options. Documented in `PRICING_DATA.md`.
+**`catalog.ts`** — tool metadata and plan options for form selectors (billing type: seat / flat / usage). Hardcoded prices for the audit engine land in Phase 4. Documented in `PRICING_DATA.md`.
+
+### `lib/audit-form/`
+
+| File | Role |
+| ---- | ---- |
+| `schema.ts` | `auditFormSchema` (submit) + `auditFormDraftSchema` (hydrate), defaults |
+| `constants.ts` | Use cases, storage key, row limits |
+| `storage.ts` | `localStorage` draft load/save/clear (draft schema on load) |
+
+Types exported via `types/audit-form.ts`.
 
 ### `lib/ai/`
 
@@ -48,6 +58,66 @@ Resend integration for lead capture notifications.
 ### `lib/utils/`
 
 `cn()` and small shared helpers.
+
+### `lib/design/`
+
+Spacing and container width tokens consumed by shared layout components.
+
+### `lib/toast.ts`
+
+Thin wrapper over Sonner for consistent success/error/info/promise toasts.
+
+## UI architecture (Phase 1)
+
+Layered design system — routes compose shared layout; pages use typography + containers; forms use primitives.
+
+```
+app/layout.tsx          → fonts, globals, <Toaster />
+app/*/layout.tsx        → <SiteLayout> (navbar + main + footer)
+
+components/shared/      → layout shell, typography, containers, FormField
+components/ui/          → shadcn primitives (Button, Card, Input, …)
+lib/design/tokens.ts    → section spacing, max-width constants
+app/globals.css         → CSS variables (theme), base typography rules
+```
+
+| Component | Role |
+| --------- | ---- |
+| `SiteLayout` | Sticky navbar, skip link, flex column min-height |
+| `Container` / `Section` | Responsive horizontal padding + max-width + vertical rhythm |
+| `Display` / `Lead` / … | Semantic typography scale (Tailwind `fontSize` tokens) |
+| `FormField` | Accessible label + hint + error wiring for RHF fields (Phase 2) |
+| `Button` variants | `default`, `brand`, `outline`, `secondary`, `ghost`, `link`, `destructive` |
+
+**Theme:** HSL CSS variables in `:root` — slate foreground, brand blue accent (`--brand`), success green for savings UI later. Dark mode variables defined; toggle deferred.
+
+**Toast:** Sonner `<Toaster />` in root layout; call `toast.success()` from `lib/toast` in client components or server actions (Phase 5+).
+
+**Accessibility:** Skip link, `aria-*` on `FormField`, focus rings on interactive elements, semantic headings via typography components.
+
+## Audit form flow (Phase 3)
+
+```
+/audit (AuditForm client component)
+  ├─ useForm + zodResolver(auditFormSchema)
+  ├─ useFieldArray("tools") → ToolRow × n
+  ├─ watch → debounced saveAuditDraft → localStorage
+  ├─ mount → loadAuditDraft → reset(form)
+  └─ submit → auditFormSchema → save → toast (engine redirect Phase 4)
+```
+
+**Per tool row:** `tool` → `plan` (catalog-driven) → `monthlySpend` → `seats` (if seat-based) → `useCase`.
+
+**Global:** `teamSize` (company context for engine rules).
+
+**Validation layers:**
+
+| Layer | Schema | When |
+| ----- | ------ | ---- |
+| Hydrate | `auditFormDraftSchema` | `loadAuditDraft()` — allows $0 spend while editing |
+| Submit | `auditFormSchema` | Form submit — positive spend, no duplicate tools, valid plans |
+
+**Components:** `components/form/audit-form.tsx`, `tool-row.tsx`, `form-select.tsx`, `form-number-input.tsx`.
 
 ## Data flow (target state)
 
@@ -67,16 +137,16 @@ Cursor, GitHub Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Wind
 
 | Phase | Scope                                      |
 | ----- | ------------------------------------------ |
-| 0     | Scaffold, tooling, docs (this repo state)  |
-| 1     | Landing page polish                        |
-| 2     | Audit form + validation                    |
-| 3     | Audit engine + pricing data                |
-| 4     | Results UI + savings display               |
+| 0     | Scaffold, tooling, docs                    |
+| 1     | Design system + shared layout              |
+| 2     | Marketing landing page                     |
+| 3     | Audit form + validation + localStorage     |
+| 4     | Audit engine + results UI                  |
 | 5     | Supabase persistence                       |
 | 6     | AI summary + fallback                      |
 | 7     | Lead capture + Resend                      |
 | 8     | Public shareable reports                   |
-| 9     | Tests, deploy, hardening                   |
+| 9     | Deploy hardening                           |
 
 ## Deployment
 

@@ -40,6 +40,57 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm test`         | Vitest (single run)      |
 | `npm run test:watch` | Vitest watch           |
 
+## Setup progress
+
+| Phase | Status | Scope |
+| ----- | ------ | ----- |
+| 0 | Done | Scaffold, tooling, docs |
+| 1 | Done | Design system, layout, UI primitives |
+| 2 | Done | Marketing landing page |
+| 3 | Done | Audit form + validation + localStorage |
+| 4 | — | Audit engine + pricing |
+
+## Features (shipped)
+
+- **Landing** — Hero, features, benefits, workflow, FAQ, trust indicators
+- **Audit form** (`/audit`) — Dynamic tool rows (add/remove, max 15), tool & plan selectors from catalog, monthly spend, seats for seat-based tools, team size, use case; React Hook Form + Zod; debounced `localStorage` draft (`stackaudit-audit-draft`); duplicate-tool prevention
+
+### Audit form quick reference
+
+| Field | Scope | Notes |
+| ----- | ----- | ----- |
+| Team size | Form | Whole company headcount |
+| Tool | Per row | 9 supported tools; duplicates blocked |
+| Plan | Per row | Catalog-driven per tool |
+| Monthly spend | Per row | USD; required &gt; 0 on submit |
+| Seats | Per row | Required for Cursor, Copilot, Windsurf |
+| Use case | Per row | Engineering, product, design, etc. |
+
+## Screenshots
+
+Landing page sections are built for Product Hunt–quality captures. After running the dev server, save PNGs to `docs/screenshots/` (see [docs/screenshots/README.md](./docs/screenshots/README.md)).
+
+| Preview | File | Section |
+| ------- | ---- | ------- |
+| *Add after capture* | `docs/screenshots/hero.png` | Hero + audit preview |
+| *Add after capture* | `docs/screenshots/features.png` | Features grid |
+| *Add after capture* | `docs/screenshots/workflow.png` | Workflow steps |
+| *Add after capture* | `docs/screenshots/cta.png` | Final CTA |
+
+```bash
+npm run dev
+# → http://localhost:3000
+```
+
+## Design system (Phase 1)
+
+- **Layout:** `SiteLayout`, `Navbar`, `Footer`, `Container`, `Section`
+- **Typography:** `Display`, `Title`, `Lead`, `Eyebrow`, `Text`, `Caption`
+- **UI:** Button (incl. `brand` variant), Card, Input, Textarea, Label, Badge, Separator
+- **Forms:** `FormField` wrapper (label, hint, error, a11y)
+- **Toast:** Sonner via `lib/toast` + `<Toaster />` in root layout
+- **Tokens:** `lib/design/tokens.ts` + CSS variables in `app/globals.css`
+
 ## Folder structure
 
 ```
@@ -49,13 +100,21 @@ app/
   results/[id]/    # Audit results + public report
 
 components/
-  landing/ form/ results/ shared/ ui/
+  shared/          # Layout, typography, containers, form-field
+  landing/         # Marketing sections (hero, features, FAQ, …)
+  form/ results/ ui/
+
+data/
+  landing-content.ts  # Marketing copy (single source)
 
 lib/
+  design/          # Spacing & layout tokens
+  audit-form/      # Zod schema, defaults, localStorage
   audit-engine/    # Deterministic savings logic
-  pricing/         # Hardcoded plan data
+  pricing/         # Tool/plan catalog for form + engine
   ai/              # Anthropic summary
   email/           # Resend lead notifications
+  toast.ts         # Toast helper (Sonner)
   utils/
 
 types/             # Shared TypeScript types

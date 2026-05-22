@@ -1,6 +1,6 @@
 import { SiteLayout } from "@/components/shared/site-layout";
 
-export default function MarketingLayout({
+export default function ResultsLayout({
   children,
 }: {
   children: React.ReactNode;
