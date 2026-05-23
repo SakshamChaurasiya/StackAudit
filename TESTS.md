@@ -15,6 +15,8 @@ npm run test:watch    # watch mode
 
 ## Current coverage
 
+- `tests/pricing/validate.test.ts` — catalog integrity
+- `tests/pricing/models.test.ts` — cost estimation, seat rules
 - `tests/audit-form/schema.test.ts` — submit + draft schemas, duplicates, seats
 - `tests/audit-form/storage.test.ts` — localStorage round-trip
 - `tests/components/container.test.tsx` — Container/Section layout

@@ -62,8 +62,11 @@
 
 ---
 
-## Phase 2: Marketing Landing Page
+## Day 2 — Phase 2: Marketing Landing Page
 
+**Date:** 2026-05-22
+
+### Done
 
 - Centralized copy in `data/landing-content.ts` (hero, features, benefits, workflow, FAQ, CTA)
 - Modular landing sections in `components/landing/`:
@@ -91,7 +94,7 @@
 
 ---
 
-## Day 3 (continued) — Phase 3: Audit Form System
+## Day 2 (continued) — Phase 3: Audit Form System
 
 **Date:** 2026-05-22
 
@@ -118,3 +121,34 @@
 ### Next
 
 - Phase 4: Deterministic audit engine + pricing amounts
+
+---
+
+## Day 3 — Phase 4: Pricing Data Layer
+
+**Date:** 2026-05-23
+
+### Done
+
+- `lib/pricing/types.ts` — `NormalizedTool`, `NormalizedPlan`, `NormalizedPrice`, `PriceSource`
+- `lib/pricing/sources.ts` — vendor URL registry with `checkedAt` dates
+- `lib/pricing/data/tools.ts` — list prices for 9 tools / all plan tiers
+- `lib/pricing/data/index.ts` — `buildPricingCatalog()` + version metadata
+- `lib/pricing/models.ts` — `estimateMonthlyListCost`, `formatPrice`, `planRequiresSeatsInput`, …
+- `lib/pricing/validate.ts` — catalog integrity validation (sources, plans, tools)
+- `lib/pricing/index.ts` — public API + `PRICING_CATALOG` singleton
+- Refactored `catalog.ts` to derive form options from normalized data
+- Form: seat field now plan-aware (e.g. ChatGPT Team requires seats, Plus does not)
+- Tests: `tests/pricing/validate.test.ts`, `models.test.ts`
+- Updated `PRICING_DATA.md` (architecture, sources, price tables, update guide)
+
+### Decisions
+
+- **Single edit surface** — prices live in `data/tools.ts`; docs in `PRICING_DATA.md`
+- **Source IDs** — every plan links to `PRICING_SOURCES` for auditability
+- **Usage plans** — `listPrice.amountUsd: 0` + qualifier; engine uses user-reported spend
+- **Catalog singleton** — built at import; validated in tests
+
+### Next
+
+- Phase 5: Deterministic audit engine (consumes `PRICING_CATALOG` + form input)

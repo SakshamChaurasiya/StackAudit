@@ -1,119 +1,46 @@
+/**
+ * Form-facing catalog API — backed by normalized pricing data.
+ * @see lib/pricing/index.ts for full pricing layer
+ */
+
+import { PRICING_CATALOG } from "@/lib/pricing/index";
+import { planRequiresSeatsInput } from "@/lib/pricing/models";
+import type {
+  PlanOption,
+  ToolCatalogEntry,
+} from "@/lib/pricing/types";
 import type { SupportedTool } from "@/types";
 
-export type BillingType = "seat" | "flat" | "usage";
+/** @deprecated Use PRICING_CATALOG — kept for backward compatibility */
+export const TOOL_CATALOG: Record<SupportedTool, ToolCatalogEntry> =
+  Object.fromEntries(
+    Object.entries(PRICING_CATALOG.tools).map(([id, tool]) => [
+      id,
+      {
+        id: tool.id,
+        label: tool.label,
+        billingType: tool.defaultBillingModel,
+        plans: tool.plans.map(
+          (p): PlanOption => ({ id: p.id, label: p.label }),
+        ),
+      },
+    ]),
+  ) as Record<SupportedTool, ToolCatalogEntry>;
 
-export type PlanOption = {
-  id: string;
-  label: string;
-};
+export type { BillingModel } from "@/lib/pricing/types";
+export type { PlanOption, ToolCatalogEntry };
 
-export type ToolCatalogEntry = {
-  id: SupportedTool;
-  label: string;
-  billingType: BillingType;
-  plans: PlanOption[];
-};
-
-/** Plan catalog for form selectors — prices finalized in Phase 4 audit engine. */
-export const TOOL_CATALOG: Record<SupportedTool, ToolCatalogEntry> = {
-  cursor: {
-    id: "cursor",
-    label: "Cursor",
-    billingType: "seat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "pro", label: "Pro" },
-      { id: "business", label: "Business" },
-    ],
-  },
-  "github-copilot": {
-    id: "github-copilot",
-    label: "GitHub Copilot",
-    billingType: "seat",
-    plans: [
-      { id: "individual", label: "Individual" },
-      { id: "business", label: "Business" },
-      { id: "enterprise", label: "Enterprise" },
-    ],
-  },
-  claude: {
-    id: "claude",
-    label: "Claude",
-    billingType: "flat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "pro", label: "Pro" },
-      { id: "team", label: "Team" },
-    ],
-  },
-  chatgpt: {
-    id: "chatgpt",
-    label: "ChatGPT",
-    billingType: "flat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "plus", label: "Plus" },
-      { id: "team", label: "Team" },
-      { id: "enterprise", label: "Enterprise" },
-    ],
-  },
-  "anthropic-api": {
-    id: "anthropic-api",
-    label: "Anthropic API",
-    billingType: "usage",
-    plans: [
-      { id: "pay-as-you-go", label: "Pay as you go" },
-      { id: "committed", label: "Committed use" },
-    ],
-  },
-  "openai-api": {
-    id: "openai-api",
-    label: "OpenAI API",
-    billingType: "usage",
-    plans: [
-      { id: "pay-as-you-go", label: "Pay as you go" },
-      { id: "prepaid", label: "Prepaid credits" },
-    ],
-  },
-  gemini: {
-    id: "gemini",
-    label: "Gemini",
-    billingType: "flat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "advanced", label: "Advanced" },
-      { id: "api", label: "API / Vertex" },
-    ],
-  },
-  windsurf: {
-    id: "windsurf",
-    label: "Windsurf",
-    billingType: "seat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "pro", label: "Pro" },
-      { id: "teams", label: "Teams" },
-    ],
-  },
-  v0: {
-    id: "v0",
-    label: "v0",
-    billingType: "flat",
-    plans: [
-      { id: "free", label: "Free" },
-      { id: "premium", label: "Premium" },
-      { id: "team", label: "Team" },
-    ],
-  },
-};
-
-export const TOOL_OPTIONS = Object.values(TOOL_CATALOG).map((t) => ({
+export const TOOL_OPTIONS = Object.values(PRICING_CATALOG.tools).map((t) => ({
   value: t.id,
   label: t.label,
 }));
 
-export function getToolEntry(tool: SupportedTool): ToolCatalogEntry {
+export function getToolEntry(tool: SupportedTool) {
   return TOOL_CATALOG[tool];
+}
+
+export function getNormalizedTool(tool: SupportedTool) {
+  return PRICING_CATALOG.tools[tool];
 }
 
 export function getPlansForTool(tool: SupportedTool): PlanOption[] {
@@ -121,19 +48,25 @@ export function getPlansForTool(tool: SupportedTool): PlanOption[] {
 }
 
 export function toolRequiresSeats(tool: SupportedTool): boolean {
-  return TOOL_CATALOG[tool].billingType === "seat";
+  return PRICING_CATALOG.tools[tool].metadata.requiresSeats;
+}
+
+export function toolRequiresSeatsForPlan(
+  tool: SupportedTool,
+  planId: string,
+): boolean {
+  return planRequiresSeatsInput(PRICING_CATALOG.tools[tool], planId);
 }
 
 export function getDefaultPlanForTool(tool: SupportedTool): string {
-  return TOOL_CATALOG[tool].plans[0]?.id ?? "";
+  return PRICING_CATALOG.tools[tool].plans[0]?.id ?? "";
 }
 
 export function isValidPlanForTool(tool: SupportedTool, planId: string): boolean {
-  return TOOL_CATALOG[tool].plans.some((p) => p.id === planId);
+  return PRICING_CATALOG.tools[tool].plans.some((p) => p.id === planId);
 }
 
-const ALL_TOOLS = Object.keys(TOOL_CATALOG) as SupportedTool[];
-
 export function findUnusedTool(used: SupportedTool[]): SupportedTool | null {
-  return ALL_TOOLS.find((t) => !used.includes(t)) ?? null;
+  const all = Object.keys(PRICING_CATALOG.tools) as SupportedTool[];
+  return all.find((t) => !used.includes(t)) ?? null;
 }

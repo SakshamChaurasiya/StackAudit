@@ -48,7 +48,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | 1 | Done | Design system, layout, UI primitives |
 | 2 | Done | Marketing landing page |
 | 3 | Done | Audit form + validation + localStorage |
-| 4 | — | Audit engine + pricing |
+| 4 | Done | Centralized pricing data layer |
+| 5 | — | Audit engine + results UI |
 
 ## Features (shipped)
 
@@ -111,7 +112,7 @@ lib/
   design/          # Spacing & layout tokens
   audit-form/      # Zod schema, defaults, localStorage
   audit-engine/    # Deterministic savings logic
-  pricing/         # Tool/plan catalog for form + engine
+  pricing/         # Normalized catalog, sources, models, validation
   ai/              # Anthropic summary
   email/           # Resend lead notifications
   toast.ts         # Toast helper (Sonner)

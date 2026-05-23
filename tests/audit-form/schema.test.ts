@@ -29,12 +29,13 @@ describe("auditFormSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("requires seats for seat-based tools", () => {
+  it("requires seats for seat-based plans", () => {
     const result = auditFormSchema.safeParse({
       teamSize: 5,
       tools: [
         {
           ...createEmptyToolRow("github-copilot"),
+          plan: "business",
           monthlySpend: 100,
           seats: 0,
         },

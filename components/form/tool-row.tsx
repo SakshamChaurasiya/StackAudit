@@ -19,7 +19,7 @@ import {
   getDefaultPlanForTool,
   getPlansForTool,
   TOOL_OPTIONS,
-  toolRequiresSeats,
+  toolRequiresSeatsForPlan,
 } from "@/lib/pricing/catalog";
 import type { AuditFormValues } from "@/types/audit-form";
 import type { SupportedTool } from "@/types";
@@ -48,7 +48,9 @@ export function ToolRow({
     name: `tools.${index}.tool`,
   }) as SupportedTool;
 
-  const showSeats = tool ? toolRequiresSeats(tool) : false;
+  const plan = useWatch({ control, name: `tools.${index}.plan` });
+  const showSeats =
+    tool && plan ? toolRequiresSeatsForPlan(tool, plan) : false;
   const planOptions = tool
     ? getPlansForTool(tool).map((p) => ({ value: p.id, label: p.label }))
     : [];
@@ -104,7 +106,8 @@ export function ToolRow({
                   setValue(`tools.${index}.plan`, getDefaultPlanForTool(nextTool), {
                     shouldValidate: true,
                   });
-                  if (toolRequiresSeats(nextTool)) {
+                  const defaultPlan = getDefaultPlanForTool(nextTool);
+                  if (toolRequiresSeatsForPlan(nextTool, defaultPlan)) {
                     setValue(`tools.${index}.seats`, 1, { shouldValidate: true });
                   } else {
                     setValue(`tools.${index}.seats`, undefined, {
@@ -131,6 +134,19 @@ export function ToolRow({
                 {...field}
                 options={planOptions}
                 disabled={!tool}
+                onChange={(e) => {
+                  field.onChange(e);
+                  const nextPlan = e.target.value;
+                  if (tool && toolRequiresSeatsForPlan(tool, nextPlan)) {
+                    setValue(`tools.${index}.seats`, 1, {
+                      shouldValidate: true,
+                    });
+                  } else {
+                    setValue(`tools.${index}.seats`, undefined, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
               />
             </FormField>
           )}

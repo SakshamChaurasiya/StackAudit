@@ -4,7 +4,7 @@ import { USE_CASES } from "@/lib/audit-form/constants";
 import {
   getDefaultPlanForTool,
   getPlansForTool,
-  toolRequiresSeats,
+  toolRequiresSeatsForPlan,
 } from "@/lib/pricing/catalog";
 import type { SupportedTool } from "@/types";
 
@@ -51,7 +51,7 @@ function refineSeatRules(
   row: z.infer<typeof toolRowBaseSchema>,
   ctx: z.RefinementCtx,
 ) {
-  if (toolRequiresSeats(row.tool)) {
+  if (toolRequiresSeatsForPlan(row.tool, row.plan)) {
     if (row.seats === undefined || row.seats < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -137,7 +137,9 @@ export function createEmptyToolRow(
     tool,
     plan: getDefaultPlanForTool(tool),
     monthlySpend: 0,
-    seats: toolRequiresSeats(tool) ? 1 : undefined,
+    seats: toolRequiresSeatsForPlan(tool, getDefaultPlanForTool(tool))
+      ? 1
+      : undefined,
     useCase: "engineering",
   };
 }

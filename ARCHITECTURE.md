@@ -35,7 +35,19 @@ Pure functions: input stack → recommendations + monthly/annual savings. Rules 
 
 ### `lib/pricing/`
 
-**`catalog.ts`** — tool metadata and plan options for form selectors (billing type: seat / flat / usage). Hardcoded prices for the audit engine land in Phase 4. Documented in `PRICING_DATA.md`.
+Centralized pricing layer — normalized tools/plans, list prices, vendor sources, validation.
+
+| Module | Role |
+| ------ | ---- |
+| `types.ts` | `NormalizedTool`, `NormalizedPlan`, `PriceSource` |
+| `data/tools.ts` | Editable list prices (single source) |
+| `sources.ts` | Vendor URL + `checkedAt` registry |
+| `models.ts` | Cost estimation, seat rules, formatting |
+| `validate.ts` | Catalog integrity for CI/tests |
+| `catalog.ts` | Form-facing re-exports (backward compatible) |
+| `index.ts` | `PRICING_CATALOG` singleton |
+
+Documented in `PRICING_DATA.md`. Audit engine (Phase 5) consumes `estimateMonthlyListCost` and overlap metadata.
 
 ### `lib/audit-form/`
 
@@ -141,12 +153,12 @@ Cursor, GitHub Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Wind
 | 1     | Design system + shared layout              |
 | 2     | Marketing landing page                     |
 | 3     | Audit form + validation + localStorage     |
-| 4     | Audit engine + results UI                  |
-| 5     | Supabase persistence                       |
-| 6     | AI summary + fallback                      |
-| 7     | Lead capture + Resend                      |
-| 8     | Public shareable reports                   |
-| 9     | Deploy hardening                           |
+| 4     | Pricing data layer                         |
+| 5     | Audit engine + results UI                  |
+| 6     | Supabase persistence                       |
+| 7     | AI summary + fallback                      |
+| 8     | Lead capture + Resend                      |
+| 9     | Public shareable reports + deploy          |
 
 ## Deployment
 
