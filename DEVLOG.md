@@ -151,4 +151,68 @@
 
 ### Next
 
-- Phase 5: Deterministic audit engine (consumes `PRICING_CATALOG` + form input)
+- Phase 5: Deterministic audit engine core (done)
+- Phase 5 (continued): Results UI
+
+---
+
+## Day 4 — Phase 5: Audit Engine Core
+
+**Date:** 2026-05-24
+
+### Done
+
+- `lib/audit-engine/types.ts` — Engine types (`AuditInput`, `AuditResult`, `Recommendation`, `AuditSummary`).
+- `lib/audit-engine/calculator.ts` — Pure financial math utilities (savings percent, monthly/annual spend, overspend delta).
+- `lib/audit-engine/priority.ts` — Scopes recommendations into P1 (highest), P2 (medium), P3 (lowest) and sorts.
+- `lib/audit-engine/rules/` — Deterministic financial logic rules:
+  - `overspend.ts` — Reported vs. list price (+15% threshold check).
+  - `downgrade.ts` — Plan downgrade (business -> pro for small teams).
+  - `redundant.ts` — Co-existence of overlapping paid tools (e.g. Cursor + Copilot).
+  - `api-switch.ts` — Chat seat subscription -> token API billing arbitrage.
+  - `alternative.ts` — Cheaper equivalent tool options (e.g. Windsurf vs. Cursor Pro).
+  - `unused-tier.ts` — Seat floor waste (e.g. paying for minimum seat count on Claude Team).
+- `lib/audit-engine/engine.ts` — Orchester running all rules, deduplicating findings (keeping highest savings per tool + type pair), sorting and finalizing statistics.
+- `lib/audit-engine/index.ts` — Export barrel.
+- Exported all audit engine types from `types/index.ts`.
+- Tests: Added comprehensive suite of unit/integration tests under `tests/audit-engine/`:
+  - `overspend.test.ts`, `downgrade.test.ts`, `redundant.test.ts`, `api-switch.test.ts`, `calculator.test.ts`, `engine.test.ts`
+- Verified vitest: All 116 tests passing.
+- Updated `ARCHITECTURE.md` to document submodules, design, and data flow.
+
+### Decisions
+
+- **Deterministic & explainable logic** — recommendation reasoning uses predefined string templates with actual pricing data variables; no AI or fuzzy matching in the rules.
+- **Rule deduplication** — if multiple rules trigger for the same tool + rule type (e.g. downgrade vs alternative), the orchestrator keeps the recommendation offering the highest financial saving.
+- **Priority tiering** — P1 ($50+/mo saving or IDE redundancy), P2 ($20-$49/mo saving or seat floor waste), P3 (<$20/mo saving or alternative tool recommendation).
+
+---
+
+## Day 4 (continued) — Phase 6: Results Experience UX
+
+**Date:** 2026-05-24
+
+### Done
+
+- **Results Page UI/UX** (`app/results/[id]/`) — Built a highly-polished, screenshot-worthy client results layout:
+  - `SavingsHero`: Renders a large animated dollar amount of annual savings, and conditional "Already Optimized" fallback state with clean styling.
+  - `AuditSummaryBar`: Highlights list price vs. reported spend, tool count, and billing gap.
+  - `RecommendationsList`: Organizes findings by priority level (P1 High, P2 Medium, P3 Low) with color-coded dividers.
+  - `RecommendationCard`: Features hover transformations, type icons, clear explanation text, and saving pills.
+  - `ToolBreakdown`: Displays a table outlining user reported seat counts, spend vs list price, and status indicator badges.
+  - `ResultsCta` & `ShareButton`: Connects conditional email/share button components with descriptive sonner toasts.
+- **Client Data Flow** — Updated `AuditForm` to trigger the audit engine client-side on submission, serialize results to `sessionStorage` with a fresh UUID, and direct the user to the matching `/results/[id]` path.
+- **Hydration & Skeleton Loader** — Added a client-side loading state and a fallback UI if the audit result cannot be loaded.
+- **Lint Warning Resolution** — Cleaned up minor typescript-eslint unused variable warnings in both code files and test suites.
+- **Mockup Assets** — Generated and configured 4 high-fidelity mock web screenshots under `docs/screenshots/` showing hero, features, workflow, and CTA.
+
+### Decisions
+
+- **Session-storage Bridge** — Kept results data in `sessionStorage` under `stackaudit-result-[uuid]` to cleanly decouple UI presentation from Supabase persistence (Phase 7).
+- **Interactive Toasts** — Set up email reports and link sharing with sonner toasts, ensuring buttons are not dead while backend APIs are pending.
+
+### Next
+
+- Phase 7: Supabase integration for persisting audits and leads
+
+

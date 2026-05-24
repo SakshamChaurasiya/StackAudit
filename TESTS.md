@@ -15,15 +15,26 @@ npm run test:watch    # watch mode
 
 ## Current coverage
 
-- `tests/pricing/validate.test.ts` — catalog integrity
-- `tests/pricing/models.test.ts` — cost estimation, seat rules
-- `tests/audit-form/schema.test.ts` — submit + draft schemas, duplicates, seats
-- `tests/audit-form/storage.test.ts` — localStorage round-trip
-- `tests/components/container.test.tsx` — Container/Section layout
-- `tests/components/typography.test.tsx` — Display, Eyebrow, Lead
-- `tests/landing/content.test.ts` — landing copy structure
-- `tests/audit-form/schema.test.ts` — Zod rules (seats, spend, min tools)
-- `tests/audit-form/storage.test.ts` — localStorage draft round-trip
+### Pricing Layer
+- `tests/pricing/validate.test.ts` — catalog integrity (plan pricing matches, IDs exist)
+- `tests/pricing/models.test.ts` — cost estimation, seat rules, formatting
+
+### Audit Form
+- `tests/audit-form/schema.test.ts` — Zod rules (seats, spend, min tools, duplicates)
+- `tests/audit-form/storage.test.ts` — localStorage draft load, save, clear round-trip
+
+### UI Components
+- `tests/components/container.test.tsx` — Container/Section layout classes
+- `tests/components/typography.test.tsx` — Display, Eyebrow, Lead rendering
+- `tests/landing/content.test.ts` — landing copy structure integrity
+
+### Audit Engine Core
+- `tests/audit-engine/calculator.test.ts` — Pure financial math (aggregate spend, savings percentages, annual multiplier)
+- `tests/audit-engine/overspend.test.ts` — reported > list * 1.15 logic trigger and savings output
+- `tests/audit-engine/downgrade.test.ts` — plan downgrading (business -> pro) rules for Cursor, ChatGPT, etc.
+- `tests/audit-engine/redundant.test.ts` — overlapping paid tools (Cursor + Copilot, Claude + ChatGPT, LLM APIs)
+- `tests/audit-engine/api-switch.test.ts` — Pro subscriptions vs. developer token usage arbitrage
+- `tests/audit-engine/engine.test.ts` — End-to-end scenarios covering clean stacks, IDE overlaps, seat floors, and sorting/deduplication logic.
 
 ## Priority matrix
 

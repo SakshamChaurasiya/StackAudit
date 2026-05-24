@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 
@@ -17,6 +18,7 @@ import {
   createEmptyToolRow,
   defaultAuditFormValues,
 } from "@/lib/audit-form/schema";
+import { runAudit } from "@/lib/audit-engine";
 import { findUnusedTool } from "@/lib/pricing/catalog";
 import {
   clearAuditDraft,
@@ -29,6 +31,7 @@ import type { AuditFormValues } from "@/types/audit-form";
 const PERSIST_DEBOUNCE_MS = 400;
 
 export function AuditForm() {
+  const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -93,10 +96,18 @@ export function AuditForm() {
 
   const onSubmit = handleSubmit((data) => {
     saveAuditDraft(data);
-    toast.success("Stack saved", {
-      description:
-        "Audit engine runs in Phase 4. Your inputs are saved locally.",
-    });
+    try {
+      const result = runAudit(data);
+      const uuid = crypto.randomUUID();
+      sessionStorage.setItem(`stackaudit-result-${uuid}`, JSON.stringify(result));
+      toast.success("Audit complete!", {
+        description: "Redirecting to your results...",
+      });
+      router.push(`/results/${uuid}`);
+    } catch (err) {
+      console.error("Audit run error:", err);
+      toast.error("Failed to run audit");
+    }
   });
 
   const onClearDraft = () => {

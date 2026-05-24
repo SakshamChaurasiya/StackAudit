@@ -96,4 +96,34 @@
   .text-pretty {
     text-wrap: pretty;
   }
+
+  /* Results page — priority badge colours */
+  .badge-p1 {
+    @apply bg-red-50 text-red-700 ring-1 ring-red-200;
+  }
+  .badge-p2 {
+    @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200;
+  }
+  .badge-p3 {
+    @apply bg-sky-50 text-sky-700 ring-1 ring-sky-200;
+  }
+
+  /* Results page — savings number fade-up entrance */
+  .animate-fade-up {
+    animation: fade-up 0.5s ease both;
+  }
+  .animate-fade-up-delay {
+    animation: fade-up 0.5s ease 0.15s both;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

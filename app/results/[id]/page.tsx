@@ -1,41 +1,19 @@
-import { Container, Section } from "@/components/shared/container";
-import { Display, Lead, Text } from "@/components/shared/typography";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResultsPageClient } from "@/app/results/[id]/results-client";
 
-export default async function ResultsPage({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+export async function generateMetadata({ params }: Props) {
+  const { id } = await params;
+  return {
+    title: `Audit Results (${id.slice(0, 8)}) | StackAudit`,
+    description: "Detailed SaaS spend breakdown, savings recommendations, and plan optimizations.",
+  };
+}
+
+export default async function ResultsPage({ params }: Props) {
   const { id } = await params;
 
-  return (
-    <Section spacing="default">
-      <Container size="narrow">
-        <div className="mb-10 space-y-3">
-          <Display as="h1" size="default">
-            Audit Results
-          </Display>
-          <Lead>
-            Savings breakdown and recommendations — Phase 3–4.
-          </Lead>
-          <Text muted>
-            Audit ID:{" "}
-            <span className="font-mono text-foreground">{id}</span>
-          </Text>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommendations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Deterministic audit output will render here.
-            </p>
-          </CardContent>
-        </Card>
-      </Container>
-    </Section>
-  );
+  return <ResultsPageClient id={id} />;
 }

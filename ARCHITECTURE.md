@@ -31,7 +31,36 @@ User → Landing → Audit Form → Audit Engine → Results Page
 
 ### `lib/audit-engine/`
 
-Pure functions: input stack → recommendations + monthly/annual savings. Rules cover team plan overspend, redundant tools, API vs seat pricing, retail vs credits, cheaper alternatives.
+Pure functions taking the stack inputs and returning deterministic, explainable recommendations along with monthly/annual savings calculations.
+
+| Module | Role |
+| ------ | ---- |
+| `types.ts` | Shared engine types (`AuditInput`, `AuditResult`, `Recommendation`, `AuditSummary`) |
+| `calculator.ts` | Financial math utilities (pure calculations, savings percent, annual multipliers) |
+| `priority.ts` | Recommendation priority scoring (P1/P2/P3) and sorting |
+| `engine.ts` | Main orchestrator running rules, deduplicating, and calculating the summary |
+| `rules/` | Specific recommendation rule modules (overspend, downgrade, redundant, api-switch, alternative, unused-tier) |
+| `index.ts` | Public API re-exporting core functions and types |
+
+#### Data Flow:
+```
+AuditInput (form values + teamSize)
+   ↓
+runAudit()
+   ├─ Enrich inputs using PRICING_CATALOG
+   ├─ Run rule modules:
+   │    ├─ overspend: reported > list * 1.15
+   │    ├─ downgrade: business -> pro for small teams
+   │    ├─ redundant: overlapping paid tools (e.g. Cursor + Copilot)
+   │    ├─ api-switch: chat seat -> API usage (engineering usecase)
+   │    ├─ alternative: Windsurf vs Cursor Pro
+   │    └─ unused-tier: seat floors (e.g. Claude Team min 5 seats)
+   ├─ Deduplicate conflicting suggestions (keeping highest saving)
+   ├─ Score priorities (P1 / P2 / P3)
+   └─ Compute summary (total spend, estimated list, savings)
+   ↓
+AuditResult (summary, recommendations, scoredAt)
+```
 
 ### `lib/pricing/`
 
@@ -130,6 +159,17 @@ app/globals.css         → CSS variables (theme), base typography rules
 | Submit | `auditFormSchema` | Form submit — positive spend, no duplicate tools, valid plans |
 
 **Components:** `components/form/audit-form.tsx`, `tool-row.tsx`, `form-select.tsx`, `form-number-input.tsx`.
+
+## Results flow & Session-storage Bridge (Phase 6)
+
+During Phase 6 (prior to Supabase integration in Phase 7), data is bridged client-side using `sessionStorage`:
+1. `AuditForm` runs `runAudit(data)` on submit.
+2. A random UUID is generated on the client.
+3. The resulting `AuditResult` is stored in `sessionStorage` under `stackaudit-result-{uuid}`.
+4. The router redirects to `/results/{uuid}`.
+5. `ResultsPageClient` reads the results from `sessionStorage` on mount, handles hydration loading/skeleton states, and renders the dashboard.
+
+This decouples the visual presentation of results from persistence, allowing independent verification and clean upgrade paths for database lookups in Phase 7.
 
 ## Data flow (target state)
 

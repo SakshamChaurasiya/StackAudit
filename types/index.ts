@@ -3,6 +3,16 @@
 export type { AuditFormValues, ToolRowValues } from "@/types/audit-form";
 
 export type {
+  AuditInput,
+  AuditResult,
+  AuditSummary,
+  Recommendation,
+  RecommendationPriority,
+  RecommendationType,
+  ToolAuditInput,
+} from "@/lib/audit-engine/types";
+
+export type {
   BillingModel,
   NormalizedPlan,
   NormalizedTool,

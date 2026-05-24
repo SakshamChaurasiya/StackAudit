@@ -1,0 +1,112 @@
+import type { UseCase } from "@/lib/audit-form/constants";
+import type { SupportedTool } from "@/types";
+
+// ─── Input ────────────────────────────────────────────────────────────────────
+
+/** Single tool row from the validated audit form. */
+export type ToolAuditInput = {
+  tool: SupportedTool;
+  plan: string;
+  monthlySpend: number;
+  seats?: number;
+  useCase: UseCase;
+};
+
+/** Full validated input to the audit engine. */
+export type AuditInput = {
+  teamSize: number;
+  tools: ToolAuditInput[];
+};
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+/**
+ * The category of a recommendation — drives icon and copy grouping in the UI.
+ *
+ * - `overspend`     Reported spend exceeds published list price significantly.
+ * - `downgrade`     A cheaper plan within the same tool covers the team's needs.
+ * - `redundant`     Two tools in the stack serve the same purpose; remove one.
+ * - `api-switch`    Engineers paying subscription prices should switch to API billing.
+ * - `alternative`   A different tool in the same category costs less.
+ * - `unused-tier`   Seat count is below the vendor's minimum seat floor.
+ */
+export type RecommendationType =
+  | "overspend"
+  | "downgrade"
+  | "redundant"
+  | "api-switch"
+  | "alternative"
+  | "unused-tier";
+
+/**
+ * Priority tier for a recommendation.
+ * P1 = highest urgency / largest dollar impact.
+ */
+export type RecommendationPriority = 1 | 2 | 3;
+
+/** A single actionable recommendation produced by the audit engine. */
+export type Recommendation = {
+  /** Unique stable ID — deterministic, derived from rule + toolId. */
+  id: string;
+  type: RecommendationType;
+  /** The primary tool this recommendation targets. */
+  toolId: SupportedTool;
+  /** Human-readable title shown in the results UI. */
+  title: string;
+  /**
+   * Fully explainable reasoning string.
+   * Must be a hardcoded template — never AI-generated.
+   */
+  reasoning: string;
+  /** Monthly savings in USD. Always ≥ 0. */
+  monthlySaving: number;
+  /** Annual savings (monthlySaving × 12). */
+  annualSaving: number;
+  /** UI priority tier. */
+  priority: RecommendationPriority;
+  /** For redundant/alternative rules — the tool being removed/replaced. */
+  conflictingToolId?: SupportedTool;
+  /** For downgrade rules — the cheaper plan to move to. */
+  targetPlanId?: string;
+  /** For alternative rules — the suggested replacement tool. */
+  alternativeToolId?: SupportedTool;
+};
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+/** Aggregated financial summary for the whole stack. */
+export type AuditSummary = {
+  /** Total monthly spend as reported by the user. */
+  totalMonthlySpend: number;
+  /** Annualized reported spend. */
+  totalAnnualSpend: number;
+  /** Sum of estimated list costs from the pricing catalog. */
+  estimatedMonthlyListCost: number;
+  /** Amount reported spend exceeds list cost (0 if under). */
+  overspendAmount: number;
+  /** Combined monthly savings from all recommendations. */
+  totalMonthlySaving: number;
+  /** Combined annual savings from all recommendations. */
+  totalAnnualSaving: number;
+  /**
+   * Savings as a percentage of total reported spend.
+   * Rounded to 1 decimal place.
+   */
+  savingsPercent: number;
+  /** Number of tools in the input stack. */
+  toolCount: number;
+  /** Total number of recommendations generated. */
+  recommendationCount: number;
+};
+
+// ─── Result ───────────────────────────────────────────────────────────────────
+
+/** Full output of a single audit run. */
+export type AuditResult = {
+  input: AuditInput;
+  summary: AuditSummary;
+  /** Sorted by priority (P1 first), then by monthlySaving descending. */
+  recommendations: Recommendation[];
+  /** ISO timestamp of when the audit was scored. */
+  scoredAt: string;
+};
