@@ -51,6 +51,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | 4 | Done | Centralized pricing data layer |
 | 5 | Done | Deterministic audit engine |
 | 6 | Done | Results UX (savings hero, cards, breakdowns) |
+| 7 | Done | Backend & Database persistence (Supabase) |
 
 ## Features (shipped)
 
@@ -62,8 +63,13 @@ Open [http://localhost:3000](http://localhost:3000).
   - **Financial Summary Bar** — Compact overview of monthly spend, list price, and billing gap.
   - **Actionable Recommendations** — Grouped by priority (P1/P2/P3) and detailed with clear, deterministic reasoning and savings.
   - **Tool Breakdown** — Detailed per-tool table showing seats, your spend vs catalog list price, and delta status badges.
-  - **Conditional CTAs** — Shareable results stub and email capture stub (uses `lib/toast` fallback for subsequent phases).
+  - **Conditional CTAs** — Shareable results stub and email capture stub.
   - **Session-storage Bridge** — Client-side serialization and retrieval patterns, fully preparing the application for database integration in Phase 7.
+- **Backend & Database** (`/app/actions`) — Secure, backend-backed SaaS persistence built on Next.js 15 Server Actions and Supabase database tables:
+  - **Audit Persistence** — Saves the user's validated input, calculated summary statistics, and generated recommendations lists inside the `audits` table.
+  - **Lead Capture** — Collects user email addresses and links them optionally to their audit records inside the `leads` table.
+  - **Server-Side Pre-rendering** — Results are pre-fetched directly from the database on the server, optimizing SEO and eliminating client loading skeletons.
+  - **Development Fallback** — Automatically falls back to client-side scoring and `sessionStorage` lookup if Supabase env parameters are unconfigured, enabling out-of-the-box local development.
 
 ### Audit form quick reference
 
@@ -143,9 +149,22 @@ tests/             # Vitest + RTL
 
 See repo root for additional product docs (`GTM.md`, `METRICS.md`, etc.).
 
-## Environment variables
+## Environment variables & Supabase Setup
 
-Copy `.env.example` to `.env.local`. Keys are introduced per phase — see `ARCHITECTURE.md`.
+1. Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Set up your Supabase database instance (either locally or on [supabase.com](https://supabase.com)).
+3. Execute the SQL schema script inside the [supabase/schema.sql](./supabase/schema.sql) file inside the Supabase SQL editor to create the `audits` and `leads` tables, indices, and RLS policies.
+4. Update the Supabase parameters in `.env.local`:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+   ```
+
+*Note: If the Supabase keys are not set, the application will run in **Development Fallback Mode**, which utilizes browser-level `sessionStorage` and client-side scoring.*
 
 ## License
 

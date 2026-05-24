@@ -162,24 +162,37 @@ app/globals.css         → CSS variables (theme), base typography rules
 
 ## Results flow & Session-storage Bridge (Phase 6)
 
-During Phase 6 (prior to Supabase integration in Phase 7), data is bridged client-side using `sessionStorage`:
-1. `AuditForm` runs `runAudit(data)` on submit.
-2. A random UUID is generated on the client.
-3. The resulting `AuditResult` is stored in `sessionStorage` under `stackaudit-result-{uuid}`.
-4. The router redirects to `/results/{uuid}`.
-5. `ResultsPageClient` reads the results from `sessionStorage` on mount, handles hydration loading/skeleton states, and renders the dashboard.
+During Phase 6, data was bridged client-side using `sessionStorage` under `stackaudit-result-{uuid}` before routing the user to `/results/{uuid}`.
 
-This decouples the visual presentation of results from persistence, allowing independent verification and clean upgrade paths for database lookups in Phase 7.
+## Database Flow & Supabase Persistence (Phase 7)
 
-## Data flow (target state)
+In Phase 7, the application utilizes Server Actions and a Supabase database configuration to persist audit results and captured lead emails.
 
-1. User submits audit form → validate with Zod.
-2. Server action or API route runs `auditEngine(stack)`.
-3. Persist `{ id, input, results, createdAt }` to Supabase.
-4. Optionally generate AI summary (async or on-demand).
-5. Redirect to `/results/[id]`.
-6. Lead form on results → Supabase + Resend.
-7. Public report: same `[id]` route, read-only when shared.
+### Data Flow Diagram:
+```
+User submits AuditForm
+    ↓
+Server Action: runAndSaveAuditAction(input)
+    ├─ Valides schema on the server
+    ├─ If Supabase unconfigured: Returns fallback flag
+    ├─ Runs runAudit(input)
+    ├─ Inserts audit input & results to Supabase audits table
+    └─ Returns UUID id
+    ↓
+Redirect to /results/[id]
+    ├─ Server Component (page.tsx) queries selectAudit(id) from Supabase
+    ├─ If record exists: Server pre-renders results and passes initialResult to ResultsPageClient
+    └─ If null (Fallback Mode): ResultsPageClient hydrates from sessionStorage
+```
+
+### Table Layouts & Row Level Security (RLS)
+
+1. **`audits` table**: Holds user inputs, calculated totals, and recommendations list.
+   - Anyone (anonymous submission) is granted insert permissions.
+   - Anyone is granted select permissions to read public results pages.
+2. **`leads` table**: Holds captured email addresses linked to specific audit IDs.
+   - Anyone is granted insert permissions to register their email.
+   - Read/select access is restricted entirely to the service role (admin-only) to secure user emails.
 
 ## Supported tools
 
@@ -194,11 +207,12 @@ Cursor, GitHub Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Wind
 | 2     | Marketing landing page                     |
 | 3     | Audit form + validation + localStorage     |
 | 4     | Pricing data layer                         |
-| 5     | Audit engine + results UI                  |
-| 6     | Supabase persistence                       |
-| 7     | AI summary + fallback                      |
-| 8     | Lead capture + Resend                      |
-| 9     | Public shareable reports + deploy          |
+| 5     | Audit engine core                          |
+| 6     | Results Experience UX                      |
+| 7     | Backend & Database persistence (Supabase)  |
+| 8     | AI summary + fallback                      |
+| 9     | Lead notifications + Resend                |
+| 10    | Public shareable reports + deploy          |
 
 ## Deployment
 

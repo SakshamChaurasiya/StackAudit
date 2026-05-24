@@ -19,6 +19,7 @@ import {
   defaultAuditFormValues,
 } from "@/lib/audit-form/schema";
 import { runAudit } from "@/lib/audit-engine";
+import { runAndSaveAuditAction } from "@/app/actions/audit";
 import { findUnusedTool } from "@/lib/pricing/catalog";
 import {
   clearAuditDraft,
@@ -94,16 +95,33 @@ export function AuditForm() {
     append(createEmptyToolRow(nextTool));
   };
 
-  const onSubmit = handleSubmit((data) => {
+  const onSubmit = handleSubmit(async (data) => {
     saveAuditDraft(data);
     try {
-      const result = runAudit(data);
-      const uuid = crypto.randomUUID();
-      sessionStorage.setItem(`stackaudit-result-${uuid}`, JSON.stringify(result));
-      toast.success("Audit complete!", {
-        description: "Redirecting to your results...",
+      const res = await runAndSaveAuditAction(data);
+      if (res.success) {
+        toast.success("Audit complete!", {
+          description: "Redirecting to your results...",
+        });
+        router.push(`/results/${res.id}`);
+        return;
+      }
+
+      if (res.success === false && "fallback" in res && res.fallback) {
+        // Fallback: run engine client-side and save to sessionStorage
+        const result = runAudit(data);
+        const uuid = crypto.randomUUID();
+        sessionStorage.setItem(`stackaudit-result-${uuid}`, JSON.stringify(result));
+        toast.success("Audit complete (local draft)!", {
+          description: "Redirecting to your results...",
+        });
+        router.push(`/results/${uuid}`);
+        return;
+      }
+
+      toast.error("Failed to run audit", {
+        description: "error" in res ? res.error : "Database error occurred",
       });
-      router.push(`/results/${uuid}`);
     } catch (err) {
       console.error("Audit run error:", err);
       toast.error("Failed to run audit");

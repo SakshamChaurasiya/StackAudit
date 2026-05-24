@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, DatabaseBackup, Loader2 } from "lucide-react";
 
 import { Container, Section } from "@/components/shared/container";
 import { Display, Text } from "@/components/shared/typography";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import { SavingsHero } from "@/components/results/savings-hero";
 import { AuditSummaryBar } from "@/components/results/audit-summary-bar";
@@ -18,24 +19,33 @@ import type { AuditResult } from "@/lib/audit-engine/types";
 
 type Props = {
   id: string;
+  initialResult?: AuditResult | null;
 };
 
-export function ResultsPageClient({ id }: Props) {
-  const [result, setResult] = useState<AuditResult | null>(null);
-  const [loading, setLoading] = useState(true);
+export function ResultsPageClient({ id, initialResult }: Props) {
+  const [result, setResult] = useState<AuditResult | null>(initialResult || null);
+  const [loading, setLoading] = useState(!initialResult);
+  const [isFallback, setIsFallback] = useState(false);
 
   useEffect(() => {
+    // If the server preloaded the result from Supabase, skip sessionStorage lookup
+    if (initialResult) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const dataStr = sessionStorage.getItem(`stackaudit-result-${id}`);
       if (dataStr) {
         setResult(JSON.parse(dataStr));
+        setIsFallback(true);
       }
     } catch (err) {
       console.error("Failed to parse audit result from sessionStorage:", err);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, initialResult]);
 
   if (loading) {
     return (
@@ -87,9 +97,17 @@ export function ResultsPageClient({ id }: Props) {
                 </Link>
               </Button>
             </div>
-            <Display as="h1" size="default" className="font-bold tracking-tight">
-              Audit Report
-            </Display>
+            <div className="flex items-center gap-3">
+              <Display as="h1" size="default" className="font-bold tracking-tight">
+                Audit Report
+              </Display>
+              {isFallback && (
+                <Badge variant="outline" className="flex items-center gap-1 border-amber-500/20 bg-amber-500/5 text-amber-600">
+                  <DatabaseBackup className="h-3 w-3" />
+                  Local Preview
+                </Badge>
+              )}
+            </div>
             <Text muted className="text-xs font-mono">
               ID: {id}
             </Text>
@@ -109,7 +127,7 @@ export function ResultsPageClient({ id }: Props) {
 
         <ToolBreakdown input={result.input} />
 
-        <ResultsCta summary={result.summary} />
+        <ResultsCta summary={result.summary} auditId={id} />
       </Container>
     </Section>
   );

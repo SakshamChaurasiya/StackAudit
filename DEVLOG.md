@@ -215,4 +215,35 @@
 
 - Phase 7: Supabase integration for persisting audits and leads
 
+---
 
+## Day 4 (continued) — Phase 7: Backend & Database
+
+**Date:** 2026-05-24
+
+### Done
+
+- **Supabase Integration** — Installed `@supabase/supabase-js` client library.
+- **Database Schema Migration** (`supabase/schema.sql`) — Structured SQL script to provision the tables:
+  - `audits` table storing UUID primary keys, inputs (JSONB), summary (JSONB), and recommendations (JSONB).
+  - `leads` table capturing user email addresses, optionally linked to `audits.id`.
+  - Configured RLS policies: read-write access for audits, write-only public access for leads (emails remain secure).
+- **Client & DB Service Layer** — Created `lib/supabase/client.ts` to instantiate public and admin Supabase client instances. Built `lib/supabase/db.ts` to expose clean database CRUD operations (`insertAudit`, `selectAudit`, `insertLead`).
+- **Server Actions** — Formulated Next.js 15 Server Actions:
+  - `runAndSaveAuditAction`: Parses inputs with Zod schema, scores the results via `runAudit` server-side, and persists records to the database.
+  - `captureLeadAction`: Validates emails and inserts lead contacts.
+- **UI Form Integration** — Integrated form mutations:
+  - Rewired `AuditForm` to call `runAndSaveAuditAction` on submit.
+  - Set up `ResultsPage` (server wrapper) to query the Supabase database directly on the server, speeding up page load speeds and enabling SEO pre-rendering.
+  - Configured `ResultsCta` to display a styled text input and submit captured lead emails directly to `captureLeadAction`.
+- **Offline Fallback Bridge** — Implemented client-side fallback detection: if Supabase environment variables are missing (e.g. initial dev environment), the app automatically falls back to client-side scoring and `sessionStorage` storage.
+
+### Decisions
+
+- **Server-Side Scoring** — Computing score summaries server-side within the Server Action ensures that calculation results are tamper-proof and verified before database insert.
+- **Server Actions over REST API** — Next.js 15 Server Actions provide robust end-to-end type safety directly from the client forms to database queries.
+- **Write-Only Leads Policy** — Enabled database RLS policies preventing read access to email leads table by public anon keys.
+
+### Next
+
+- Phase 8: AI Summary (Anthropic API integration + static fallback)
