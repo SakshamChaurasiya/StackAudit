@@ -35,7 +35,7 @@ export function Footer() {
             <p className="mb-3 text-sm font-semibold">Product</p>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
-                <li key={link.href}>
+                <li key={link.label}>
                   <Link
                     href={link.href}
                     className="text-caption text-muted-foreground transition-colors hover:text-foreground"
@@ -51,7 +51,7 @@ export function Footer() {
             <p className="mb-3 text-sm font-semibold">Company</p>
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
-                <li key={link.href}>
+                <li key={link.label}>
                   <Link
                     href={link.href}
                     className="text-caption text-muted-foreground transition-colors hover:text-foreground"
