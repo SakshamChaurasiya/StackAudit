@@ -16,9 +16,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StackAudit — AI Spend Audit for Startups",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
+  title: {
+    default: "StackAudit — AI Spend Audit for Startups",
+    template: "%s | StackAudit",
+  },
   description:
     "Analyze and optimize your AI tool spending with deterministic audits and actionable savings recommendations.",
+  openGraph: {
+    siteName: "StackAudit",
+    type: "website",
+    title: "StackAudit — AI Spend Audit for Startups",
+    description:
+      "Analyze and optimize your AI tool spending with deterministic audits and actionable savings recommendations.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StackAudit — AI Spend Audit for Startups",
+    description:
+      "Analyze and optimize your AI tool spending with deterministic audits and actionable savings recommendations.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

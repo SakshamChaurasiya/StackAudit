@@ -9,7 +9,7 @@ Built for the Credex hiring assignment. Deterministic audit logic, AI only for p
 - **Framework:** Next.js 15 (App Router), TypeScript
 - **UI:** Tailwind CSS, shadcn/ui, React Hook Form, Zod
 - **Data:** Supabase
-- **AI:** Anthropic API (summary only)
+- **AI:** Google Gemini API (personalized summary only)
 - **Email:** Resend
 - **Testing:** Vitest, React Testing Library
 - **Deploy:** Vercel
@@ -52,6 +52,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | 5 | Done | Deterministic audit engine |
 | 6 | Done | Results UX (savings hero, cards, breakdowns) |
 | 7 | Done | Backend & Database persistence (Supabase) |
+| 8 | Done | AI Summary System (Gemini 1.5 Flash + deterministic fallback) |
+| 9 | Done | Lead Capture + Email Flow (Resend transactional emails) |
+| 10 | Done | Shareable Reports + SEO (OG images, Twitter cards, share menu) |
 
 ## Features (shipped)
 
@@ -70,6 +73,20 @@ Open [http://localhost:3000](http://localhost:3000).
   - **Lead Capture** — Collects user email addresses and links them optionally to their audit records inside the `leads` table.
   - **Server-Side Pre-rendering** — Results are pre-fetched directly from the database on the server, optimizing SEO and eliminating client loading skeletons.
   - **Development Fallback** — Automatically falls back to client-side scoring and `sessionStorage` lookup if Supabase env parameters are unconfigured, enabling out-of-the-box local development.
+- **AI Summary** (`lib/ai`) — Personalized narrative summaries powered by Gemini 1.5 Flash:
+  - **Gemini Integration** — Calls `gemini-1.5-flash` after an audit is saved. Prompt strictly constrains the model to only narrate engine-provided figures.
+  - **Graceful Fallback** — If `GEMINI_API_KEY` is missing or the API call fails, a deterministic template summary is generated from engine data — zero API calls, always available.
+  - **AI Summary Card** — Results page displays the summary in a branded card with an "AI Summary" or "Quick Summary" badge.
+- **Email Flow** (`lib/email`) — Transactional email system powered by Resend:
+  - **Confirmation Email** — Branded HTML email sent to the submitter with their savings summary and a link to the results page.
+  - **Lead Notification** — Internal alert email to the site owner with lead details and audit stats at a glance.
+  - **Anti-Spam Protection** — Same email within 10 minutes is silently deduplicated; no duplicate emails sent.
+  - **Graceful Fallback** — If `RESEND_API_KEY` is missing, leads are saved to Supabase normally and emails are silently skipped.
+- **Shareable Reports** — Every audit result is a permanent public URL built for social sharing:
+  - **Dynamic OG Image** — `/results/[id]/opengraph-image` generates a 1200×630 branded card with the real savings figure using Next.js `ImageResponse` (no external service).
+  - **Twitter / LinkedIn Cards** — Per-audit `og:title`, `og:description`, and `twitter:card` tags with personalized savings copy.
+  - **Share Menu** — Upgraded share button with Copy link, Share on X/Twitter, and Share on LinkedIn options.
+  - **Public Read-Only View** — `?shared=1` URL parameter switches to a visitor-friendly layout (hides "Edit Stack", shows "Run your own audit" CTA).
 
 ### Audit form quick reference
 
@@ -163,6 +180,12 @@ See repo root for additional product docs (`GTM.md`, `METRICS.md`, etc.).
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
    SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
    ```
+
+5. Add Gemini API key to `.env.local`:
+   ```env
+   GEMINI_API_KEY=your-gemini-api-key
+   ```
+   Get a free API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey). If omitted, the app uses a deterministic fallback summary automatically.
 
 *Note: If the Supabase keys are not set, the application will run in **Development Fallback Mode**, which utilizes browser-level `sessionStorage` and client-side scoring.*
 

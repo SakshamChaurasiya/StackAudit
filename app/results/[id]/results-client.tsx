@@ -14,15 +14,17 @@ import { AuditSummaryBar } from "@/components/results/audit-summary-bar";
 import { RecommendationsList } from "@/components/results/recommendations-list";
 import { ToolBreakdown } from "@/components/results/tool-breakdown";
 import { ResultsCta } from "@/components/results/results-cta";
+import { AiSummaryCard } from "@/components/results/ai-summary-card";
 
 import type { AuditResult } from "@/lib/audit-engine/types";
 
 type Props = {
   id: string;
   initialResult?: AuditResult | null;
+  isShared?: boolean;
 };
 
-export function ResultsPageClient({ id, initialResult }: Props) {
+export function ResultsPageClient({ id, initialResult, isShared = false }: Props) {
   const [result, setResult] = useState<AuditResult | null>(initialResult || null);
   const [loading, setLoading] = useState(!initialResult);
   const [isFallback, setIsFallback] = useState(false);
@@ -90,12 +92,14 @@ export function ResultsPageClient({ id, initialResult }: Props) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm" className="-ml-3 text-muted-foreground hover:text-foreground">
-                <Link href="/audit">
-                  <ArrowLeft className="mr-1 h-4 w-4" />
-                  Edit Stack
-                </Link>
-              </Button>
+              {!isShared && (
+                <Button asChild variant="ghost" size="sm" className="-ml-3 text-muted-foreground hover:text-foreground">
+                  <Link href="/audit">
+                    <ArrowLeft className="mr-1 h-4 w-4" />
+                    Edit Stack
+                  </Link>
+                </Button>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <Display as="h1" size="default" className="font-bold tracking-tight">
@@ -116,6 +120,13 @@ export function ResultsPageClient({ id, initialResult }: Props) {
 
         <SavingsHero summary={result.summary} />
 
+        {result.aiSummary && (
+          <AiSummaryCard
+            summary={result.aiSummary}
+            isAiGenerated={result.isAiGenerated}
+          />
+        )}
+
         <div className="space-y-2">
           <h2 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
             Financial Health
@@ -127,7 +138,7 @@ export function ResultsPageClient({ id, initialResult }: Props) {
 
         <ToolBreakdown input={result.input} />
 
-        <ResultsCta summary={result.summary} auditId={id} />
+        <ResultsCta summary={result.summary} auditId={id} isShared={isShared} />
       </Container>
     </Section>
   );

@@ -247,3 +247,92 @@
 ### Next
 
 - Phase 8: AI Summary (Anthropic API integration + static fallback)
+
+---
+
+## Day 5 — Phase 8: AI Summary System
+
+**Date:** 2026-05-25
+
+### Done
+
+- **Gemini Integration** — Installed `@google/generative-ai` SDK. Created `lib/ai/gemini.ts` to initialize the `GoogleGenerativeAI` client using `GEMINI_API_KEY` env var. Uses `gemini-1.5-flash` model for fast, cost-effective text generation. Full error handling returns `null` on any failure.
+- **Prompt Engineering** (`lib/ai/prompt.ts`) — Built a structured prompt builder that injects: tool names + plans + spend, team size, total monthly spend, potential savings, and top 2 recommendations from the deterministic engine. Explicit constraints: 80–120 words, no invented numbers, plain paragraph output.
+- **Deterministic Fallback** (`lib/ai/fallback.ts`) — Zero-API fallback summary generator. Produces an accurate, meaningful summary from engine data alone. Two variants: savings-available summary and already-optimized summary.
+- **Public AI Index** (`lib/ai/index.ts`) — `generateSummary(result)` tries Gemini first, falls back automatically. Returns `{ text, isAiGenerated }` so the UI can distinguish and display the correct badge.
+- **Database Schema** — Added `ai_summary TEXT` column to `audits` table. Includes `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for migration safety on existing databases.
+- **DB Layer** (`lib/supabase/db.ts`) — Added `updateAuditSummary(id, text)` helper to persist generated summary. Updated `selectAudit` to select `ai_summary` and return it in `AuditResult`.
+- **Type System** (`lib/audit-engine/types.ts`) — Added `aiSummary?: string` and `isAiGenerated?: boolean` to `AuditResult`.
+- **Server Action** (`app/actions/audit.ts`) — Wired `generateSummary` after audit insert, persists via `updateAuditSummary`. Inner try/catch ensures summary failure is non-fatal — audit save always succeeds.
+- **AI Summary Card** (`components/results/ai-summary-card.tsx`) — Branded results card with gradient border, Sparkles icon, and conditional "AI Summary" / "Quick Summary" badge. "Powered by Gemini" label when AI-generated.
+- **Results Page** — `AiSummaryCard` renders between `SavingsHero` and `SummaryBar` when `aiSummary` is present.
+- **Documentation** — Updated `PROMPTS.md` (v1 Gemini prompt, AI usage policy, versioning table), `DEVLOG.md`, `README.md` (Gemini in tech stack, AI features section, setup step 5), `.env.example` (GEMINI_API_KEY).
+
+### Decisions
+
+- **Gemini over Anthropic** — Switched from original Anthropic placeholder to Gemini 1.5 Flash based on user preference. Free daily quota covers development and moderate production load.
+- **Non-blocking summary** — AI summary generation is wrapped in an inner try/catch so audit persistence is never blocked by AI failures.
+- **Post-insert update pattern** — Audit is inserted first (gets a UUID), then summary is generated and written back via UPDATE. Simpler than pre-generating and more resilient.
+- **Fallback always ships** — The deterministic fallback ensures every user always sees a meaningful summary, even in local dev without a Gemini key.
+
+### Next
+
+- Phase 9: Email notifications (Resend integration)
+
+---
+
+## Day 5 (continued) — Phase 9: Lead Capture + Email Flow
+
+**Date:** 2026-05-25
+
+### Done
+
+- **Resend Integration** (`lib/email/resend.ts`) — Installed `resend` SDK. Initialized `Resend` client from `RESEND_API_KEY`. Exported `isResendConfigured()` and a typed `sendEmail()` wrapper that never throws — returns `{ success, error? }` on any failure.
+- **Email Templates** — Two branded HTML email templates:
+  - `lib/email/templates/confirmation.ts` — Confirmation email to the submitter with personalized savings figures, results page link, and "no invented numbers" constraint baked in.
+  - `lib/email/templates/notification.ts` — Internal lead alert email to the site owner with lead details, audit stats grid (spend, savings, tools, recommendations), and direct audit link.
+- **Public Email Index** (`lib/email/index.ts`) — `sendLeadEmails(lead, summary)` fires both emails in parallel via `Promise.allSettled`. Non-fatal: individual send failures are logged but never propagate. No-op if `RESEND_FROM_EMAIL` is not set.
+- **Anti-Spam / Rate Limiting** (`lib/supabase/db.ts`) — Added `hasRecentLead(email, windowMinutes)` helper. Queries the `leads` table for any row with the same email created within the time window. Fails open (returns false) on DB errors to avoid blocking legitimate submissions.
+- **Schema Migration** (`supabase/schema.sql`) — Added `name TEXT` (optional submitter name) and `notified_at TIMESTAMPTZ` columns to the `leads` table with migration-safe `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements.
+- **DB Layer** (`lib/supabase/db.ts`) — Updated `insertLead` to accept optional `name` parameter and persist it alongside `email` and `audit_id`.
+- **Server Action** (`app/actions/lead.ts`) — Rewrote `captureLeadAction` with: optional `name` field, Zod validation including name max-length, 10-minute duplicate check, `insertLead` with name, non-fatal `sendLeadEmails` call with audit summary fetched from DB.
+- **UI — Lead CTA** (`components/results/results-cta.tsx`) — Added optional name input above the email field. Updated copy: "Get your savings report by email" with dynamic savings figure in description. Updated success state: "Check your inbox — report is on its way!" Updated toast messages.
+
+### Decisions
+
+- **`Promise.allSettled` for parallel sends** — Both confirmation and notification emails fire in parallel; a failure in one doesn't block the other.
+- **10-minute deduplication window** — Balances UX (accidental double-clicks, browser refresh) against allowing re-submissions after meaningful time has passed.
+- **Non-fatal email chain** — Email sending is always wrapped in a try/catch inside the server action. A Resend outage never breaks lead capture.
+- **`notified_at` column reserved** — Added to schema now for future use (e.g., tracking when a follow-up was sent), without wiring it in yet.
+
+### Next
+
+- Phase 10: Deployment + production hardening
+
+---
+
+## Day 5 (continued) — Phase 10: Shareable Reports + SEO
+
+**Date:** 2026-05-25
+
+### Done
+
+- **Root Metadata Upgrade** (`app/layout.tsx`) — Added `metadataBase` (reads `NEXT_PUBLIC_APP_URL`), title template (`%s | StackAudit`), full `openGraph` + `twitter` defaults, and `robots: { index: true, follow: true }`.
+- **Dynamic Per-Audit Metadata** (`app/results/[id]/page.tsx`) — `generateMetadata` now fetches the real audit from Supabase and produces: personalized `title` ("Save $X/yr on AI tools"), `description` (tool count + recommendation count), `openGraph.images` pointing to the dynamic OG route, `twitter.card: "summary_large_image"`, and `alternates.canonical` URL.
+- **Site-Level OG Image** (`app/opengraph-image.tsx`) — Static 1200×630 branded card using Next.js `ImageResponse` (edge runtime). Used on landing, audit, and any page without a specific OG image.
+- **Dynamic Audit OG Image** (`app/results/[id]/opengraph-image.tsx`) — Per-audit 1200×630 card. Fetches real savings figures from Supabase and renders: large savings number, "Potential Annual Savings" label, 4-column stats bar (spend, tools, recommendations, savings %). Falls back to a generic branded card if audit not found.
+- **Share Button Upgrade** (`components/results/share-button.tsx`) — Replaced stub "Copy link" button with a full dropdown: Copy link (with ?shared=1 appended + ✓ confirmation toast), Share on X/Twitter (pre-filled tweet text + URL), Share on LinkedIn. Keyboard-accessible with backdrop dismiss.
+- **`isShared` Pattern** — Results page (`page.tsx`) reads `?shared=1` from searchParams. Passed as `isShared` prop to `ResultsPageClient` and `ResultsCta`.
+  - `ResultsPageClient`: hides "Edit Stack" back button for external viewers.
+  - `ResultsCta`: swaps the email capture form for a "Audit your own AI stack" CTA with "Run free audit →" button.
+- **Architecture docs** — Updated ARCHITECTURE.md flow diagram (Gemini + Resend + OG image), route table (added shared view + OG image route).
+
+### Decisions
+
+- **`?shared=1` over separate route** — Keeps one canonical URL per audit; sharing just appends a query param that switches the UI mode. Simpler than maintaining a `/share/[id]` route.
+- **`next/og` ImageResponse** — Built-in edge function, zero external dependencies, works on Vercel for free. Dynamic images generated on-demand and cached by CDN.
+- **Fallback OG image** — If audit is not found (expired, private fallback mode), the OG image renders a generic branded card instead of a 404.
+
+### Next
+
+- Phase 11: Deployment to Vercel + domain + final polish

@@ -3,7 +3,8 @@
 import { runAudit } from "@/lib/audit-engine";
 import { auditFormSchema } from "@/lib/audit-form/schema";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import { insertAudit } from "@/lib/supabase/db";
+import { insertAudit, updateAuditSummary } from "@/lib/supabase/db";
+import { generateSummary } from "@/lib/ai";
 import type { AuditInput } from "@/lib/audit-engine/types";
 
 export type AuditActionResponse =
@@ -13,8 +14,8 @@ export type AuditActionResponse =
 
 /**
  * Server action to process and save a stack audit.
- * Runs deterministic calculations server-side and persists to Supabase.
- * Gracefully signals fallback mode if Supabase is unconfigured.
+ * Runs deterministic calculations server-side, persists to Supabase,
+ * and generates a personalized AI summary via Gemini (with graceful fallback).
  */
 export async function runAndSaveAuditAction(
   rawInput: unknown
@@ -35,11 +36,21 @@ export async function runAndSaveAuditAction(
       return { success: false, fallback: true };
     }
 
-    // 3. Compute audit calculations
+    // 3. Compute audit calculations deterministically
     const result = runAudit(input);
 
-    // 4. Save to database
+    // 4. Save core audit to database
     const id = await insertAudit(input, result);
+
+    // 5. Generate personalized AI summary (Gemini → fallback, non-blocking failure)
+    try {
+      const { text: summaryText } = await generateSummary(result);
+      // Persist the summary back to the audit record
+      await updateAuditSummary(id, summaryText);
+    } catch (summaryErr) {
+      // Non-fatal: audit is already saved; summary persistence failure is acceptable
+      console.error("[AI] Failed to generate or persist summary:", summaryErr);
+    }
 
     return { success: true, id };
   } catch (err) {

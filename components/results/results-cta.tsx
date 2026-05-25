@@ -12,14 +12,47 @@ import type { AuditSummary } from "@/lib/audit-engine/types";
 type Props = {
   summary: AuditSummary;
   auditId: string;
+  isShared?: boolean;
 };
 
-export function ResultsCta({ summary, auditId }: Props) {
+export function ResultsCta({ summary, auditId, isShared = false }: Props) {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const hasFindings = summary.recommendationCount > 0;
+
+  // External/shared view — replace email capture with a "run your own" CTA
+  if (isShared) {
+    return (
+      <section
+        aria-label="Run your own audit"
+        className="rounded-2xl border border-brand/20 bg-gradient-to-br from-brand/5 to-transparent p-6 sm:p-8"
+      >
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1 max-w-lg">
+            <h2 className="text-title-sm font-semibold tracking-tight">
+              Audit your own AI stack
+            </h2>
+            <p className="text-body text-muted-foreground">
+              Find out how much you could save on AI tools — free, instant, no signup required.
+            </p>
+          </div>
+          <div className="flex flex-shrink-0 gap-3">
+            <ShareButton />
+            <Link
+              href="/audit"
+              id="shared-run-audit-btn"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-brand-foreground shadow-sm transition-opacity hover:opacity-90"
+            >
+              Run free audit →
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,20 +60,20 @@ export function ResultsCta({ summary, auditId }: Props) {
 
     setLoading(true);
     try {
-      const res = await captureLeadAction(email, auditId);
+      const res = await captureLeadAction(email, auditId, name || undefined);
       if (res.success) {
         setSubmitted(true);
-        toast.success("Report request saved!", {
-          description: "We will email you the full report layout as soon as PDF delivery is active.",
+        toast.success("Report sent! Check your inbox.", {
+          description: "We've emailed you a link to your full audit results.",
         });
       } else {
-        toast.error("Failed to save email", {
+        toast.error("Failed to send report", {
           description: res.error,
         });
       }
     } catch (err) {
       console.error("Lead capture form submission error:", err);
-      toast.error("Failed to save email");
+      toast.error("Failed to send report");
     } finally {
       setLoading(false);
     }
@@ -55,43 +88,54 @@ export function ResultsCta({ summary, auditId }: Props) {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1 max-w-lg">
             <h2 className="text-title-sm font-semibold tracking-tight">
-              Want this in your inbox?
+              Get your savings report by email
             </h2>
             <p className="text-body text-muted-foreground">
-              Get a formatted PDF report with action steps emailed to you —
-              arriving in the next release.
+              We&apos;ll send a summary of your ${summary.totalAnnualSaving.toFixed(0)} in potential annual savings
+              straight to your inbox — so you can share it with your team.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full lg:w-auto">
+          <div className="flex flex-col gap-3 w-full lg:w-auto lg:min-w-72">
             {submitted ? (
-              <div className="rounded-lg bg-success/10 px-4 py-2.5 text-center text-sm font-medium text-success ring-1 ring-success/20">
-                ✓ We&apos;ll email you when reports are ready!
+              <div className="rounded-lg bg-success/10 px-4 py-3 text-center text-sm font-medium text-success ring-1 ring-success/20">
+                ✓ Check your inbox — report is on its way!
               </div>
             ) : (
-              <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row gap-2 w-full sm:max-w-md lg:w-auto">
+              <form onSubmit={handleFormSubmit} className="flex flex-col gap-2 w-full sm:max-w-md lg:w-auto">
                 <input
-                  type="email"
-                  required
+                  type="text"
                   disabled={loading}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-64"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name (optional)"
+                  maxLength={100}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
-                <button
-                  id="email-report-btn"
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Mail className="h-4 w-4" aria-hidden />
-                  )}
-                  Email me report
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="email"
+                    required
+                    disabled={loading}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your email address"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  <button
+                    id="email-report-btn"
+                    type="submit"
+                    disabled={loading}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" aria-hidden />
+                    )}
+                    Send report
+                  </button>
+                </div>
               </form>
             )}
             <div className="hidden sm:block">
@@ -134,3 +178,4 @@ export function ResultsCta({ summary, auditId }: Props) {
     </section>
   );
 }
+

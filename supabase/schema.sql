@@ -14,8 +14,13 @@ CREATE TABLE IF NOT EXISTS public.audits (
     input JSONB NOT NULL,
     summary JSONB NOT NULL,
     recommendations JSONB NOT NULL,
+    ai_summary TEXT,                                       -- Phase 8: Gemini AI summary (nullable)
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+-- Migration: add ai_summary column to existing databases (safe to run multiple times)
+ALTER TABLE public.audits ADD COLUMN IF NOT EXISTS ai_summary TEXT;
+
 
 -- Index on created_at for fast dashboard sorting or analytics queries
 CREATE INDEX IF NOT EXISTS idx_audits_created_at ON public.audits(created_at DESC);
@@ -41,8 +46,14 @@ CREATE TABLE IF NOT EXISTS public.leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     audit_id UUID REFERENCES public.audits(id) ON DELETE SET NULL,
     email TEXT NOT NULL,
+    name TEXT,                                                 -- Phase 9: optional submitter name
+    notified_at TIMESTAMPTZ,                                   -- Phase 9: timestamp of last confirmation email sent
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+-- Migration: add name + notified_at columns to existing databases (safe to run multiple times)
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ;
 
 -- Indexes for emails and foreign keys
 CREATE INDEX IF NOT EXISTS idx_leads_email ON public.leads(email);

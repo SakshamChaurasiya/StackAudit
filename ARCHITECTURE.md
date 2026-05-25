@@ -9,7 +9,9 @@ User → Landing → Audit Form → Audit Engine → Results Page
                                     ↓
                               Supabase (audit + lead)
                                     ↓
-                         Anthropic (summary) + Public URL
+                       Gemini (summary) + Resend (email)
+                                    ↓
+                         Public Shareable URL (OG image)
 ```
 
 ## Principles
@@ -26,6 +28,8 @@ User → Landing → Audit Form → Audit Engine → Results Page
 | `/(marketing)`     | Landing, hero, CTA to `/audit`               |
 | `/audit`           | Dynamic spend input form (RHF + Zod)         |
 | `/results/[id]`    | Results, lead capture, shareable report      |
+| `/results/[id]?shared=1` | Public read-only view (hides edit CTA) |
+| `/results/[id]/opengraph-image` | Dynamic 1200×630 OG image per audit |
 
 ## Library modules
 
