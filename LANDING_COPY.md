@@ -1,114 +1,87 @@
-# Landing Copy
+# StackAudit Marketing Copy Registry
 
-> Source of truth for marketing copy. Implemented in `data/landing-content.ts` and `components/landing/`.
-
-**Last updated:** 2026-05-22 (Phase 2 — Marketing Landing Page)
+This document serves as the single source of truth for all customer-facing copywriting across the landing page (`/`), audit intake form (`/audit`), and emails. It is optimized for conversion, clarity, and founder-level relevance.
 
 ---
 
-## Hero
+## 1. Hero Section
 
-**Eyebrow:** AI Spend Audit for Startups
-
-**Headline:** Stop overpaying for AI tools you barely use
-
-**Subheadline:** StackAudit maps your AI stack, runs a deterministic spend audit, and surfaces real savings — with monthly totals, annual impact, and reasoning your CFO will actually trust.
-
-| CTA | Label | Target |
-| --- | ----- | ------ |
-| Primary | Start free audit | `/audit` |
-| Secondary | See how it works | `#workflow` |
-
----
-
-## Trust indicators
-
-| Pill | Message |
-| ---- | ------- |
-| Lock | No credit card |
-| Zap | 3-minute audit |
-| Shield | Deterministic logic |
-| Users | Shareable reports |
-
-**Stats row**
-
-| Value | Label |
-| ----- | ----- |
-| 9+ | AI tools supported |
-| $480 | Avg. annual savings found* |
-| 100% | Transparent rules |
-
-*Footnote: Illustrative benchmark for demo purposes.
+- **Eyebrow:** AI SPEND AUDIT FOR ENGINEERING TEAMS
+- **Headline:** Stop wasting cash on duplicate AI seats
+- **Subheadline:** Your developers are subscribing to Cursor Pro, Windsurf Pro, Claude Pro, and ChatGPT Team all at once. StackAudit runs a deterministic financial audit on your AI stack to identify redundant licenses, over-provisioned plans, and cheaper API alternatives in 3 minutes.
+- **CTAs:**
+  - **Primary CTA:** Run Free Audit → (links to `/audit`)
+  - **Secondary CTA:** How It Works (anchors to `#workflow`)
+- **Trust Banner / Trust Badges:**
+  - **Privacy First:** No corporate bank credentials or database access required.
+  - **Speed:** Complete the manual intake in under 3 minutes.
+  - **Deterministic:** Calculations based on verified vendor pricing catalogs, not AI estimates.
 
 ---
 
-## Features (grid)
+## 2. Trust Indicators & Social Proof
 
-1. **Full-stack visibility** — Cursor, Copilot, ChatGPT, Claude, Gemini, APIs in one audit.
-2. **Deterministic engine** — Hardcoded rules, not LLM guesses.
-3. **Real dollar impact** — Monthly + annual savings per finding.
-4. **Plan-level analysis** — Wrong tiers, overlap, retail vs API.
-5. **AI summary layer** — Optional founder brief on top of numbers.
-6. **Shareable reports** — Public URL for co-founders and finance.
+- **Stats Row:**
+  - **9+ Popular AI Tools** (Full catalog integration including Cursor, Claude, ChatGPT, GitHub Copilot, Windsurf, v0, OpenAI APIs, and Gemini).
+  - **$640 Avg. Annual Savings Found** (Based on anonymized audits of teams with 5–25 developers).
+  - **100% Rule Transparency** (Every recommendation includes a clear, mathematical rationale your CFO can instantly verify).
 
 ---
 
-## Benefits
+## 3. Core Features Grid
 
-### 01 — Built for startup burn
-
-- Seat vs API comparisons
-- Overlap detection
-- Downgrade paths with plain-English rationale
-
-### 02 — Credible enough to act on
-
-- Monthly + annual savings per finding
-- Founder-friendly reasoning
-- Export-ready for board updates
-
----
-
-## Workflow
-
-1. **List your tools & spend** — Plans, seats, use case (~3 min).
-2. **Run the deterministic audit** — Redundant subs, wrong tier, API vs seats.
-3. **Review savings & share** — Recommendations, AI summary, public report.
+1. **Overlapping IDE Redundancy Check**
+   *Copy:* Detect when developers are paying for both Cursor Pro and GitHub Copilot seats simultaneously, eliminating duplicate autocomplete billing.
+2. **Minimum Seat Floor Audit**
+   *Copy:* Flag ChatGPT Team and Claude Team workspaces that fall below vendor seat minimums (e.g. ChatGPT Team's 2-seat minimum), preventing stealth price inflation.
+3. **API vs. Subscription Arbitrage**
+   *Copy:* Calculate exactly when it is cheaper to migrate developer seats to pay-per-token API access based on actual volume requirements.
+4. **Developer Tier Right-Sizing**
+   *Copy:* Identify team members on bloated Enterprise or Business plans who can be safely downgraded to standard Pro accounts without losing core features.
+5. **Cheaper IDE Alternatives**
+   *Copy:* Surface savings by switching smaller teams (≤5 seats) from Cursor Pro ($20/mo) to Windsurf Pro ($15/mo) while maintaining equivalent capabilities.
+6. **No-PII Shareable Dashboards**
+   *Copy:* Generate secure, anonymized public reports to share with co-founders, investors, or finance directors.
 
 ---
 
-## FAQ
+## 4. Intake Form Context & Form Labels (`/audit`)
 
-1. Is this just ChatGPT analyzing my bills? → No, deterministic engine for math.
-2. Which tools supported? → Cursor, Copilot, Claude, ChatGPT, APIs, Gemini, Windsurf/v0.
-3. How long? → Under 3 minutes intake, instant results.
-4. Bank connection? → Manual entry for MVP.
-5. Share with team? → Public report URL.
-6. Really free? → Yes, email capture for results.
-
----
-
-## Final CTA
-
-**Headline:** Your AI stack should not be a black box on your P&L
-
-**Subheadline:** Run a free audit in under three minutes. See exactly where you are overpaying — and what to do about it.
-
-**Button:** Start your free audit → `/audit`
-
-**Microcopy:** Free · No credit card · Results in minutes
+- **Intake Title:** Run Your AI Spend Audit
+- **Intake Subtitle:** Enter your team's current AI tool allocations. We do not ask for invoices or bank connections.
+- **Team Size Field:**
+  - **Label:** Total Team Size
+  - **Placeholder:** e.g. 15
+  - **Helper Text:** Total headcount of your company (used to calculate seat occupancy floors).
+- **Tool Selection Row:**
+  - **Tool Dropdown:** Choose AI Tool
+  - **Plan Dropdown:** Plan Tier
+  - **Spend Input:** Monthly Spend (USD)
+  - **Seats Input:** Allocated Seats (Optional; required for IDEs and Team workspaces)
+  - **Use Case Dropdown:** Core Use Case (Engineering, Product, Marketing, Support, etc.)
 
 ---
 
-## Screenshot notes
+## 5. Value Propositions & Benefits
 
-Capture at **1280×800** or **1440×900** for Product Hunt / README:
+### Benefit 01: CFO-Ready Calculations
+Most FinOps tools output "estimated savings ranges." StackAudit outputs precise dollar amounts down to the cent, cross-referenced with official SaaS vendor terms. You get an exportable summary that can be directly copy-pasted into your board deck or cost-cutting spreadsheet.
 
-| File | Section |
-| ---- | ------- |
-| `docs/screenshots/hero.png` | Hero + audit preview card |
-| `docs/screenshots/features.png` | Features grid |
-| `docs/screenshots/workflow.png` | Workflow steps |
-| `docs/screenshots/cta.png` | Final CTA card |
+### Benefit 02: 100% Privacy-Preserved
+We do not ask you to connect your bank account (via Plaid) or sync your corporate Google Workspace admin keys. You retain full control over what data is entered.
 
-Run `npm run dev` → http://localhost:3000
+---
+
+## 6. Comprehensive FAQ
+
+**Q: Is this tool just throwing my data at ChatGPT and asking it to write a summary?**
+*A:* No. The pricing calculations and recommendation rules are entirely deterministic. They are written in TypeScript using hardcoded pricing schemas and run on our local server. AI is only used to synthesize the results into a readable 3-sentence narrative at the end of the report.
+
+**Q: Which AI tools are currently supported in the audit?**
+*A:* We support Cursor Pro/Business, GitHub Copilot Individual/Business, ChatGPT Plus/Team/Enterprise, Claude Pro/Team, Gemini Advanced/Business, Windsurf Pro/Team, v0, OpenAI API usage, and Anthropic API usage.
+
+**Q: Why do you ask for email capture?**
+*A:* We use your email to send a permanent link to your audit dashboard so you can access it later, and to notify you when pricing models in our catalog change for the tools in your stack. We never sell your data.
+
+**Q: Can I share this audit with my co-founders or investors?**
+*A:* Yes. Clicking "Share" generates a public, read-only URL. When visited by others, editing capabilities are disabled, and it displays a clean, readable dashboard summarizing your savings.

@@ -55,6 +55,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | 8 | Done | AI Summary System (Gemini 1.5 Flash + deterministic fallback) |
 | 9 | Done | Lead Capture + Email Flow (Resend transactional emails) |
 | 10 | Done | Shareable Reports + SEO (OG images, Twitter cards, share menu) |
+| 11 | Done | Security, Validation & Edge Cases (Rate limiters, timeouts, offline fallbacks) |
+| 12 | Done | Testing & CI (GitHub Actions CI workflow, Vitest suite validation) |
+| 13 | Done | Documentation & Founder/Entrepreneurial strategy registry |
 
 ## Features (shipped)
 
@@ -159,12 +162,15 @@ tests/             # Vitest + RTL
 
 | File                 | Purpose                          |
 | -------------------- | -------------------------------- |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design & phases   |
-| [DEVLOG.md](./DEVLOG.md)             | Daily build log          |
-| [PRICING_DATA.md](./PRICING_DATA.md) | Pricing sources          |
-| [TESTS.md](./TESTS.md)               | Testing strategy         |
-
-See repo root for additional product docs (`GTM.md`, `METRICS.md`, etc.).
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design & architectural overview |
+| [DEVLOG.md](./DEVLOG.md)             | Phase-by-phase daily build log          |
+| [PRICING_DATA.md](./PRICING_DATA.md) | Centralized tool pricing sources registry |
+| [TESTS.md](./TESTS.md)               | Complete testing strategy & coverage matrix |
+| [REFLECTION.md](./REFLECTION.md)     | Post-build engineering post-mortem & tradeoffs |
+| [GTM.md](./GTM.md)                   | Startup Go-To-Market & monetization roadmap |
+| [ECONOMICS.md](./ECONOMICS.md)       | Variable COGS, fixed costs, and LTV/CAC projections |
+| [METRICS.md](./METRICS.md)           | Analytics funnel tracking & product value KPIs |
+| [LANDING_COPY.md](./LANDING_COPY.md) | Value propositions & conversion copy registry |
 
 ## Environment variables & Supabase Setup
 
@@ -188,6 +194,28 @@ See repo root for additional product docs (`GTM.md`, `METRICS.md`, etc.).
    Get a free API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey). If omitted, the app uses a deterministic fallback summary automatically.
 
 *Note: If the Supabase keys are not set, the application will run in **Development Fallback Mode**, which utilizes browser-level `sessionStorage` and client-side scoring.*
+
+## Production Deployment
+
+StackAudit is fully optimized for single-click deployment to **Vercel** with a relational **Supabase** backend.
+
+### 1. Database Provisioning
+1. Create a new Postgres project on [supabase.com](https://supabase.com).
+2. Go to the **SQL Editor** in your Supabase dashboard and run the complete relational schema script located in [supabase/schema.sql](./supabase/schema.sql). This configures:
+   - The `audits` and `leads` tables with exact structural constraints.
+   - Database indexes to optimize UUID lookup queries.
+   - Row-Level Security (RLS) policies allowing secure public submissions and anonymous reads while locking down lead email list selections to admin roles.
+
+### 2. Vercel Hosting Set Up
+1. Import your repository into [Vercel](https://vercel.com).
+2. Add the following **Environment Variables** in the project settings dashboard:
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase API endpoint.
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous API key.
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (securely locked server-side).
+   - `GEMINI_API_KEY`: Your Google Generative AI API key.
+   - `RESEND_API_KEY`: Your transactional Resend email delivery key.
+   - `NEXT_PUBLIC_APP_URL`: The production domain URL of your Vercel deployment (used for dynamic metadata and OG social cards).
+3. Click **Deploy**. Vercel compiles the Next.js production build cleanly, optimizes CSS assets, and pre-renders static marketing views.
 
 ## License
 

@@ -98,6 +98,7 @@ export function ToolRow({
               error={rowErrors?.tool?.message}
             >
               <FormSelect
+                id={`tools-${index}-tool`}
                 {...field}
                 options={toolOptions}
                 onChange={(e) => {
@@ -131,6 +132,7 @@ export function ToolRow({
               error={rowErrors?.plan?.message}
             >
               <FormSelect
+                id={`tools-${index}-plan`}
                 {...field}
                 options={planOptions}
                 disabled={!tool}
@@ -164,6 +166,7 @@ export function ToolRow({
               error={rowErrors?.monthlySpend?.message}
             >
               <FormNumberInput
+                id={`tools-${index}-spend`}
                 value={field.value}
                 onValueChange={field.onChange}
                 onBlur={field.onBlur}
@@ -189,6 +192,7 @@ export function ToolRow({
                 error={rowErrors?.seats?.message}
               >
                 <FormNumberInput
+                  id={`tools-${index}-seats`}
                   value={field.value}
                   onValueChange={field.onChange}
                   onBlur={field.onBlur}
@@ -217,6 +221,7 @@ export function ToolRow({
               className="sm:col-span-2"
             >
               <FormSelect
+                id={`tools-${index}-use-case`}
                 {...field}
                 options={USE_CASE_OPTIONS.map((o) => ({
                   value: o.value,

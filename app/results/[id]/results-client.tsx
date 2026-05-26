@@ -53,8 +53,14 @@ export function ResultsPageClient({ id, initialResult, isShared = false }: Props
     return (
       <Section spacing="lg">
         <Container size="narrow" className="flex flex-col items-center justify-center py-20 text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-brand" />
-          <Text className="mt-4 text-muted-foreground">Loading your audit results...</Text>
+          <Loader2 className="h-10 w-10 animate-spin text-brand" aria-hidden />
+          <Text
+            className="mt-4 text-muted-foreground"
+            aria-live="polite"
+            aria-label="Loading audit results"
+          >
+            Loading your audit results…
+          </Text>
         </Container>
       </Section>
     );
@@ -68,11 +74,15 @@ export function ResultsPageClient({ id, initialResult, isShared = false }: Props
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
               <AlertCircle className="h-7 w-7 text-destructive" aria-hidden />
             </div>
-            <h1 className="text-title-sm font-semibold tracking-tight">Audit Report Not Found</h1>
-            <p className="mt-2 text-body text-muted-foreground">
-              We couldn&apos;t find an audit report matching this ID. It may have expired or was run in a different browser.
+            <h1 className="text-title-sm font-semibold tracking-tight">Report Not Found</h1>
+            <p className="mt-2 text-body text-muted-foreground max-w-sm mx-auto">
+              We couldn&apos;t find an audit report with this ID. It may have been run in a
+              different browser, or the link may be incorrect.
             </p>
-            <div className="mt-6 flex justify-center gap-4">
+            <p className="mt-1 text-xs text-muted-foreground font-mono opacity-60">
+              ID: {id}
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
               <Button asChild variant="outline">
                 <Link href="/">Home</Link>
               </Button>

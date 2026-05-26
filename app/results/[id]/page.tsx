@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ResultsPageClient } from "@/app/results/[id]/results-client";
 import { selectAudit } from "@/lib/supabase/db";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -69,7 +70,9 @@ export default async function ResultsPage({ params, searchParams }: Props) {
   const initialResult = await selectAudit(id);
 
   return (
-    <ResultsPageClient id={id} initialResult={initialResult} isShared={isShared} />
+    <ErrorBoundary>
+      <ResultsPageClient id={id} initialResult={initialResult} isShared={isShared} />
+    </ErrorBoundary>
   );
 }
 

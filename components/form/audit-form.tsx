@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+import { AlertTriangle, Loader2, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,6 +34,8 @@ const PERSIST_DEBOUNCE_MS = 400;
 export function AuditForm() {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const form = useForm<AuditFormValues>({
@@ -97,9 +99,11 @@ export function AuditForm() {
 
   const onSubmit = handleSubmit(async (data) => {
     saveAuditDraft(data);
+    setServerError(null);
     try {
       const res = await runAndSaveAuditAction(data);
       if (res.success) {
+        setRetryCount(0);
         toast.success("Audit complete!", {
           description: "Redirecting to your results...",
         });
@@ -119,11 +123,31 @@ export function AuditForm() {
         return;
       }
 
-      toast.error("Failed to run audit", {
-        description: "error" in res ? res.error : "Database error occurred",
-      });
+      // Server returned an explicit error — show retry banner
+      const errorMsg = "error" in res ? res.error : "Something went wrong. Please try again.";
+      const newRetryCount = retryCount + 1;
+      setRetryCount(newRetryCount);
+
+      if (newRetryCount >= 3) {
+        // Auto-fallback after 3 server failures
+        console.warn("[AuditForm] 3 server failures — falling back to client-side audit.");
+        const result = runAudit(data);
+        const uuid = crypto.randomUUID();
+        sessionStorage.setItem(`stackaudit-result-${uuid}`, JSON.stringify(result));
+        toast.success("Audit complete (offline mode)!", {
+          description: "Server unavailable — running locally.",
+        });
+        router.push(`/results/${uuid}`);
+        return;
+      }
+
+      setServerError(errorMsg);
+      toast.error("Failed to run audit", { description: errorMsg });
     } catch (err) {
       console.error("Audit run error:", err);
+      const newRetryCount = retryCount + 1;
+      setRetryCount(newRetryCount);
+      setServerError("An unexpected error occurred. Please try again.");
       toast.error("Failed to run audit");
     }
   });
@@ -145,6 +169,30 @@ export function AuditForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-8" noValidate>
+      {serverError && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium text-destructive">Submission failed</p>
+            <p className="text-xs text-muted-foreground">{serverError}</p>
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            Retry
+          </button>
+        </div>
+      )}
       <Card className="border-border/80">
         <CardHeader>
           <CardTitle>Company</CardTitle>
@@ -166,6 +214,7 @@ export function AuditForm() {
                 error={errors.teamSize?.message}
               >
                 <FormNumberInput
+                  id="team-size"
                   value={field.value}
                   onValueChange={field.onChange}
                   onBlur={field.onBlur}

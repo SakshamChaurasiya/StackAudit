@@ -217,19 +217,44 @@ Cursor, GitHub Copilot, Claude, ChatGPT, Anthropic API, OpenAI API, Gemini, Wind
 | 8     | AI summary + fallback                      |
 | 9     | Lead notifications + Resend                |
 | 10    | Public shareable reports + deploy          |
+| 11    | Security, Validation & Edge Cases          |
+| 12    | Testing + CI (GitHub Actions workflow)     |
+| 13    | Documentation & Entrepreneurial Files      |
 
 ## Deployment
 
-- **Vercel** — Next.js native; env vars from `.env.example` categories.
-- **Supabase** — Postgres + RLS for audits/leads.
-- No edge-only requirement for audit engine (runs Node/server).
+- **Vercel** — Production build targeted. Next.js serverless functions process Server Actions.
+- **Supabase** — Relational storage with RLS policies mapping to anonymous/authenticated roles.
+- **Resend** — SMTP-based transactional email delivery.
 
-## Security notes
+## Security & Rate Limiting Architecture
 
-- Service role key server-only; anon key for client if needed.
-- Public reports: UUID ids, no PII in URL; optional expiring links later.
-- Rate-limit summary generation in production.
+To protect serverless functions from abuse and unnecessary API expenses:
+- **Sliding-Window Rate Limiter** (`lib/security/rate-limit.ts`): Tracks request counts against a sliding millisecond window in a Node-level `Map` store. 
+- **Probabilistic Cleanup:** Every check has a 5% chance of running a cleanup sweep to delete keys whose timestamps are older than $2 \times \text{windowMs}$, preventing memory leaks.
+- **Server Action Timeouts:** Next.js actions are protected by a race-condition wrapper (`withTimeout` in `app/actions/audit.ts`) that enforces a **25-second ceiling**. If execution exceeds 25s, it throws a timeout error, prompting the frontend to transition to offline client-side fallback execution rather than hitting Vercel's hard 30s crash.
+- **Input Sanitization:** Form field validation schemas trim accidental whitespace and enforce strict character ceilings to prevent database buffer injection.
 
-## Testing strategy
+## Resilience & Fallback Architecture
 
-See [TESTS.md](./TESTS.md). Engine unit tests are highest priority; UI tests for form and results critical paths.
+StackAudit maintains continuous operation via a layered client-server redundancy model:
+
+```
+[Form Submission]
+       ↓
+Server Action (rate-limited, 25s timeout)
+       ├─► [Success]  Saved to Supabase ──► Server-rendered /results/[id]
+       └─► [Failure]  3 consecutive retries fail OR Supabase unconfigured
+             │
+             └─► [Fallback Mode] Hydrates client-side engine ──► sessionStorage ──► Client-rendered /results/[id] (Development Mode)
+```
+
+1. **3-Strike Server Retry:** The audit form handles server errors gracefully. It displays an inline retry alert and allows the user to re-submit up to 3 times.
+2. **Isomorphic Engine Fallback:** After 3 consecutive server failures, the client automatically executes the audit engine inside the browser using standard JavaScript, saving the draft in `sessionStorage` and transitioning seamlessly to the results view.
+3. **React Error Boundary:** Wrapping the main results dashboard prevents uncaught JavaScript runtime errors in client components from crashing the entire app shell, rendering a clean, stylized recovery card.
+
+## Testing & CI Pipeline
+
+The testing architecture is built for strict verification of deterministic code path branches:
+- **Continuous Integration (GitHub Actions):** `.github/workflows/ci.yml` runs automatically on pushes and PRs to `main`. It runs `npm ci` (clean install), `npm run lint` (ESLint syntax check), `npm test` (Vitest test suite), and `npm run build` (production compiler validation) with mock Supabase keys injected.
+- **Deterministic Mock Timers:** Time-sensitive test assertions (e.g. rate limiter reset windows) utilize Vitest fake timers (`vi.useFakeTimers`) to guarantee test suite stability across varying hardware latencies.

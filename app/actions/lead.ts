@@ -1,14 +1,16 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { insertLead, hasRecentLead, selectAudit } from "@/lib/supabase/db";
 import { sendLeadEmails } from "@/lib/email";
+import { checkRateLimit, getClientIp, LEAD_LIMIT } from "@/lib/security/rate-limit";
 
 const leadSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: z.string().trim().email("Enter a valid email address"),
   auditId: z.string().uuid("Invalid audit identifier").optional(),
-  name: z.string().max(100, "Name is too long").optional(),
+  name: z.string().trim().max(100, "Name is too long").optional(),
 });
 
 export type LeadActionResponse =
@@ -32,6 +34,18 @@ export async function captureLeadAction(
   name?: string
 ): Promise<LeadActionResponse> {
   try {
+    // 0. Rate limit per IP
+    const reqHeaders = await headers();
+    const ip = getClientIp(reqHeaders);
+    const rateLimitResult = checkRateLimit(ip, LEAD_LIMIT);
+    if (!rateLimitResult.allowed) {
+      const waitMin = Math.ceil(rateLimitResult.retryAfterMs / 60_000);
+      return {
+        success: false,
+        error: `Too many requests. Please wait ${waitMin} minute${waitMin !== 1 ? "s" : ""} before trying again.`,
+      };
+    }
+
     // 1. Validate inputs
     const parsed = leadSchema.safeParse({ email, auditId, name });
     if (!parsed.success) {
